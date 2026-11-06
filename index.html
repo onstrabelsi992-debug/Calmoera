@@ -1,0 +1,1486 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Calmora – Prototype 3D v6</title>
+<style>
+:root{--bg:#060a1a;--bg2:#101a42;--panel:rgba(16,23,54,.78);--card:rgba(255,255,255,.045);--fg:#eef1ff;--mut:#9aa6d6;--acc:#9a8bff;--acc2:#5fe3ef;--line:rgba(150,165,230,.24);--warn:#ff6b7a;--ok:#4fd1a1;--on:#0a0f26;--r:16px;color-scheme:dark}
+*,*::before,*::after{box-sizing:border-box}
+html,body{margin:0}
+body{min-height:100dvh;background:radial-gradient(1100px 700px at 25% 0%,var(--bg2),var(--bg));color:var(--fg);font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;display:flex;flex-direction:column;padding-bottom:env(safe-area-inset-bottom,0)}
+h1,h2,h3{margin:0}
+.top{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 18px;padding-top:max(14px,env(safe-area-inset-top,0px))}
+.brand{display:flex;align-items:center;gap:12px}
+.logo{width:34px;height:34px;border-radius:11px;background:conic-gradient(from 210deg,var(--acc2),var(--acc),var(--acc2));position:relative;flex:none}
+.logo::after{content:"";position:absolute;inset:8px;border-radius:50%;background:var(--bg)}
+.brand h1{font:700 1.25rem/1.1 Georgia,"Times New Roman",serif;letter-spacing:.06em;color:var(--acc)}
+.brand p{margin:2px 0 0;font-size:.78rem;color:var(--mut)}
+.top-r{display:flex;align-items:center;gap:8px}
+.tag{font-size:.72rem;color:var(--mut);border:1px dashed var(--line);border-radius:999px;padding:4px 10px;white-space:nowrap}
+main{flex:1;display:grid;grid-template-columns:minmax(0,1fr) minmax(340px,450px);gap:14px;padding:0 18px 18px;height:calc(100dvh - 76px);min-height:560px}
+.stage-wrap{position:relative;border:1px solid var(--line);border-radius:22px;overflow:hidden;background:radial-gradient(600px 400px at 50% 45%,rgba(120,100,255,.14),transparent 70%)}
+#stage{position:absolute;inset:0;cursor:grab;outline:none}
+#stage:active{cursor:grabbing}
+#stage:focus-visible{box-shadow:inset 0 0 0 2px var(--acc)}
+#stage canvas{display:block;touch-action:none}
+.notif{position:absolute;top:12px;left:50%;z-index:6;width:min(92%,400px);display:flex;gap:12px;align-items:center;text-align:start;padding:10px 14px;border-radius:18px;opacity:0;visibility:hidden;pointer-events:none;transform:translate(-50%,-24px);transition:opacity .25s,transform .35s cubic-bezier(.2,.9,.3,1.2),visibility 0s .35s;box-shadow:0 12px 34px rgba(0,0,0,.45),0 0 0 1px rgba(154,139,255,.4)}
+.notif.on{opacity:1;visibility:visible;pointer-events:auto;transform:translate(-50%,0);transition-delay:0s}
+.notif:hover{border-color:var(--acc)}
+.nlogo{flex:none;width:36px;height:36px;border-radius:11px;background:conic-gradient(from 210deg,var(--acc2),var(--acc),var(--acc2))}
+.nbody{display:flex;flex-direction:column;min-width:0}
+.nh{display:flex;justify-content:space-between;gap:8px;font-size:.78rem;color:var(--mut)}
+.nh b{color:var(--fg)}
+.nmsg{font-weight:700;font-size:.92rem}
+.nhint{font-size:.8rem;color:var(--acc2)}
+@media (prefers-reduced-motion:reduce){.notif{transition:none}}
+@media (max-width:760px){.notif{top:56px}}
+#co{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;opacity:0;transition:opacity .2s}
+#co text{fill:var(--fg);font:600 12px system-ui,sans-serif}
+#co line{stroke:var(--mut);stroke-width:1}
+#co circle{fill:var(--acc2)}
+.glass{background:var(--panel);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);border:1px solid var(--line)}
+#cap{position:absolute;left:14px;top:14px;margin:0;max-width:min(380px,62%);padding:9px 13px;border-radius:14px;font-size:.8rem;color:var(--mut);pointer-events:none}
+.dock{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:6px;padding:6px;border-radius:999px;max-width:94%}
+.sep{width:1px;height:20px;background:var(--line);margin:0 4px}
+aside.panel{display:flex;flex-direction:column;min-height:0;border-radius:22px;overflow:hidden}
+.tabs{display:flex;gap:4px;padding:8px;border-bottom:1px solid var(--line)}
+.tabs button{flex:1;border-radius:12px;border-color:transparent}
+.tabs button[aria-selected="true"]{background:var(--card);border-color:var(--line);color:var(--acc);font-weight:600}
+.pane{padding:14px 16px 20px;overflow:auto;flex:1;min-height:0}
+.pane[hidden]{display:none}
+.pane h2{font-size:.72rem;letter-spacing:.09em;text-transform:uppercase;color:var(--mut);margin:16px 0 8px;font-weight:600}
+.pane h2:first-child{margin-top:2px}
+.row{display:flex;flex-wrap:wrap;gap:6px}
+.hint{margin:8px 0 0;font-size:.76rem;color:var(--mut);line-height:1.45}
+button{font:inherit;font-size:.84rem;color:var(--fg);background:transparent;border:1px solid var(--line);border-radius:999px;padding:7px 13px;min-height:34px;cursor:pointer;transition:background .15s,border-color .15s}
+button:hover:not(:disabled){border-color:var(--acc)}
+button:disabled{opacity:.45;cursor:default}
+button:focus-visible,input:focus-visible,summary:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+button[aria-pressed="true"]{background:var(--acc);border-color:var(--acc);color:var(--on);font-weight:600}
+.primary{background:linear-gradient(135deg,var(--acc),var(--acc2));border:0;color:var(--on);font-weight:700;padding:10px 18px;min-height:42px}
+.primary[aria-pressed="true"]{background:var(--warn);color:#fff}
+.dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-inline-end:7px;vertical-align:-1px;border:1px solid rgba(255,255,255,.4)}
+.mirror{display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap}
+#zc{width:210px;aspect-ratio:512/616;height:auto;cursor:pointer;border-radius:26px;border:1px solid var(--line);background:#050816;flex:none}
+.mirror .row{flex:1;min-width:150px}
+.hero{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px;border-radius:16px;background:var(--card);border:1px solid var(--line)}
+.hero small{display:block;color:var(--mut);font-size:.72rem;text-transform:uppercase;letter-spacing:.08em}
+#score{font:700 2.4rem/1 system-ui;font-variant-numeric:tabular-nums}
+#score span{font-size:.9rem;color:var(--mut);font-weight:400}
+#pill{font-size:.8rem;font-weight:600;padding:6px 12px;border-radius:999px;border:1px solid var(--line);color:var(--mut)}
+#pill[data-k="ok"]{color:var(--ok);border-color:var(--ok)}
+#pill[data-k="warn"]{color:var(--warn);border-color:var(--warn)}
+.scn{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.scn button{border-radius:12px;text-align:start}
+#steps{display:flex;flex-wrap:wrap;gap:6px;margin:12px 0 0;padding:0;list-style:none;counter-reset:s}
+.st{counter-increment:s;font-size:.76rem;padding:4px 10px;border-radius:999px;border:1px solid var(--line);color:var(--mut)}
+.st::before{content:counter(s) " · "}
+.st.done{color:var(--fg)}
+.st.on{background:var(--acc);border-color:var(--acc);color:var(--on);font-weight:700}
+#stat{margin:10px 0 0;font-size:.88rem;min-height:2.6em}
+#chart{width:100%;height:260px;display:block;border-radius:12px;background:rgba(6,10,28,.6)}
+.chartbox{margin-top:12px;padding:8px;border:1px solid var(--line);border-radius:18px;background:var(--card);box-shadow:0 0 0 1px rgba(154,139,255,.10),0 10px 30px rgba(95,227,239,.07)}
+.cl{display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding:0 2px 8px}
+.chip{display:inline-flex;align-items:center;font-size:.8rem;font-weight:600;padding:3px 10px 3px 4px}
+.cl button{min-height:28px;padding:3px 11px;font-size:.76rem}
+#kv{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+.k{padding:8px 10px;border-radius:12px;background:var(--card);border:1px solid var(--line)}
+.k span{display:block;color:var(--mut);font-size:.68rem;text-transform:uppercase;letter-spacing:.05em}
+.k b{font-size:.92rem;font-variant-numeric:tabular-nums}
+.card{margin-top:12px;padding:12px 14px;border-radius:14px;background:var(--card);border:1px solid var(--line);font-size:.84rem}
+.card h3{font-size:.9rem;margin-bottom:6px;color:var(--acc)}
+.card p{margin:6px 0}
+.bar{margin:8px 0 0;font-size:.78rem;color:var(--mut)}
+.bar i{display:block;height:6px;border-radius:3px;background:var(--line);position:relative;margin-top:4px}
+.bar i::after{content:"";position:absolute;inset:0;width:var(--w);background:var(--acc2);border-radius:3px}
+details{margin-top:12px;border:1px solid var(--line);border-radius:14px;padding:4px 14px 12px}
+summary{cursor:pointer;padding:8px 0;font-size:.84rem;font-weight:600}
+.sl{display:block;margin-top:10px;font-size:.8rem;color:var(--mut)}
+.sl output{float:right;color:var(--fg);font-weight:600}
+input[type=range]{width:100%;accent-color:var(--acc)}
+table{width:100%;border-collapse:collapse;font-size:.82rem}
+th,td{text-align:start;padding:8px 6px;border-bottom:1px solid var(--line);vertical-align:top}
+th{color:var(--mut);font-weight:500;width:38%}
+ul.pv{margin:8px 0 0;padding-inline-start:18px;font-size:.84rem}
+ul.pv li{margin:4px 0}
+@media (max-width:860px){
+  main{display:block;height:auto;min-height:0}
+  .stage-wrap{height:64vh;min-height:420px}
+  aside.panel{margin-top:14px}
+  #cap{max-width:calc(100% - 28px);font-size:.74rem}
+  .pane{overflow:visible}
+  .brand p{display:none}
+}
+.lang{position:relative}
+#bLang{display:inline-flex;align-items:center;gap:6px}
+.lmenu{position:absolute;top:calc(100% + 6px);inset-inline-end:0;z-index:50;display:flex;flex-direction:column;gap:2px;min-width:140px;padding:6px;border-radius:14px;background:var(--bg2);border:1px solid var(--line);box-shadow:0 8px 24px rgba(0,0,0,.35)}
+.lmenu[hidden]{display:none}
+.lmenu button{border:0;border-radius:10px;text-align:start;padding:7px 12px}
+#appfs{position:fixed;inset:0;z-index:100;background:radial-gradient(1100px 700px at 25% 0%,var(--bg2),var(--bg));display:flex;flex-direction:column;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+#appfs[hidden]{display:none}
+#txm{position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;padding:18px}
+#txm[hidden]{display:none}
+.txp{width:min(420px,100%);background:var(--bg2);border:1px solid var(--line);border-radius:20px;padding:18px;display:flex;flex-direction:column;gap:12px}
+.txp textarea{width:100%;resize:vertical;font:inherit;color:var(--fg);background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 12px}
+.txr{display:flex;justify-content:flex-end;gap:8px}
+.fsh{display:flex;justify-content:space-between;align-items:center;padding:12px 18px;color:var(--acc)}
+.fsb{flex:1;min-height:0;display:flex;gap:28px;justify-content:center;align-items:stretch;padding:0 18px 14px}
+.fsn{display:flex;flex-direction:column;gap:8px;width:220px;align-self:center}
+.fsn button{text-align:start;border-radius:14px;padding:10px 14px;font-size:.95rem}
+#fsc{flex:none;height:100%;aspect-ratio:400/840;width:auto;max-width:100%;border-radius:40px;box-shadow:0 20px 60px rgba(0,0,0,.5);cursor:pointer}
+@media (max-width:860px){.fsn{display:none}}
+.top-r{flex-wrap:wrap;justify-content:flex-end}
+#co{direction:ltr}
+#prof{margin-top:10px}
+#prof th{width:auto;font-size:.72rem;text-transform:uppercase;letter-spacing:.04em}
+html[dir=rtl] .sl output{float:left}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="brand"><span class="logo" aria-hidden="true"></span><div><h1>Calmora</h1><p>Prototype interactif · bien-être au poignet</p></div></div>
+  <div class="top-r"><div class="lang"><button id="bLang" type="button" aria-haspopup="true" aria-expanded="false" aria-label="Langue">🌐 <span id="lcur">FR</span> ▾</button><div class="lmenu" id="lmenu" role="group" aria-label="Langue" hidden><button type="button" data-l="fr" aria-pressed="true">Français</button><button type="button" data-l="en" aria-pressed="false">English</button><button type="button" data-l="ar" aria-pressed="false">العربية</button></div></div><span class="tag">Données simulées</span><button id="bFs" type="button" aria-label="Plein écran" title="Plein écran">⤢</button></div>
+</header>
+<main>
+  <section class="stage-wrap">
+    <div id="stage" tabindex="0" aria-label="Modèle 3D de la montre Calmora. Flèches gauche et droite pour tourner."></div>
+    <svg id="co" aria-hidden="true"></svg>
+    <p id="cap" class="glass"></p>
+    <button id="notif" class="notif glass" type="button" aria-live="polite"><span class="nlogo" aria-hidden="true"></span><span class="nbody"><span class="nh"><b>Calmora</b><span>maintenant</span></span><span class="nmsg" id="nMsg"></span><span class="nhint">Touchez pour ouvrir l’application</span></span></button>
+    <div class="dock glass" role="group" aria-label="Vue et application">
+      <span id="gv" style="display:contents"></span><span class="sep"></span><button id="bApp" type="button" aria-pressed="false">+ Application</button><button id="bFull" type="button">⛶ Application plein écran</button>
+    </div>
+  </section>
+  <aside class="panel glass">
+    <div class="tabs" role="tablist" aria-label="Panneaux">
+      <button role="tab" id="tabE" aria-selected="true" aria-controls="pE" type="button">Explorer</button>
+      <button role="tab" id="tabD" aria-selected="false" aria-controls="pD" type="button" tabindex="-1">Détection</button>
+      <button role="tab" id="tabF" aria-selected="false" aria-controls="pF" type="button" tabindex="-1">Fiche produit</button>
+    </div>
+    <div class="pane" id="pE" role="tabpanel" aria-labelledby="tabE">
+      <h2>Coloris</h2><div class="row" id="gc"></div>
+      <h2>État affiché</h2><div class="row" id="gs"></div>
+      <h2>Écran de la montre</h2>
+      <div class="mirror"><canvas id="zc" width="512" height="616" aria-label="Écran de la montre agrandi, cliquable"></canvas><div class="row" id="gi"></div></div>
+      <p class="hint">Échap ouvre ou ferme le menu.</p>
+    </div>
+    <div class="pane" id="pD" role="tabpanel" aria-labelledby="tabD" hidden>
+      <div class="hero"><div><small id="heroL">Score de stress</small><div id="score">10<span> / 100</span></div></div><span id="pill" data-k="">En veille</span></div>
+      <h2>Scénario</h2>
+      <div class="scn" id="gsc"></div><p class="hint" id="scd"></p>
+      <div class="row" style="margin-top:12px"><button id="simBtn" class="primary" type="button" aria-pressed="false">Lancer la simulation</button><button id="recBtn" type="button" hidden>Enregistrer la séance</button><button id="noRecBtn" type="button" hidden>Ne pas enregistrer</button></div>
+      <div class="chartbox"><div class="cl"><span class="chip"><i class="dot" style="background:var(--acc)"></i>Score</span><button type="button" id="tCl" aria-pressed="true">┄ Classique</button><button type="button" id="tHr" aria-pressed="false">FC</button></div>
+      <canvas id="chart" width="640" height="260" aria-label="Courbe du score de stress et de la fréquence cardiaque"></canvas></div>
+      <p id="stat" aria-live="polite">Choisissez un scénario.</p>
+      <ol id="steps"></ol>
+      <div id="kv"></div>
+      <div class="card" id="why"></div>
+      <details open><summary>Paramètres de détection</summary>
+        <label class="sl">Seuil d’alerte <output id="oThr">70</output><input type="range" id="rThr" min="50" max="90" step="1" value="70"></label>
+        <label class="sl">Durée de confirmation <output id="oHold">3,0 s</output><input type="range" id="rHold" min="1" max="6" step="0.5" value="3"></label>
+        <label class="sl">Mouvement maximal toléré <output id="oMv">0,30 g</output><input type="range" id="rMv" min="0.1" max="0.6" step="0.05" value="0.3"></label>
+        <p class="hint">Modifiables pendant la simulation.</p>
+      </details>
+      <details open id="perso"><summary>Personnalisation sur plusieurs jours</summary>
+        <p class="hint" style="margin-top:4px">La montre apprend la référence de la personne, puis adapte le seuil.</p>
+        <label class="sl">Jours d’apprentissage <output id="oDays">7 j</output><input type="range" id="rDays" min="0" max="14" step="1" value="7"></label>
+        <table id="prof"><thead><tr><th>Période</th><th>FC repos</th><th>VFC repos</th></tr></thead><tbody></tbody></table>
+        <p class="hint" id="adapt"></p>
+        <p class="hint">À 0 jour : référence générique (68 bpm · 45 ms).</p>
+        <div class="card" id="cmp" hidden></div>
+      </details>
+      <div class="row" style="margin-top:12px"><button id="exp" type="button" disabled>Exporter la séance (CSV)</button></div>
+      <p class="hint" id="rule">Capteur optique (PPG) + accéléromètre → filtrage → FC et VFC → score → décision → alerte Bluetooth. Mesures pendant ou juste après un mouvement ignorées ; pause de 30 min après une alerte.</p>
+    </div>
+    <div class="pane" id="pF" role="tabpanel" aria-labelledby="tabF" hidden>
+      <h2>Objectifs de conception</h2>
+      <table>
+        <tr><th>Capteurs</th><td>PPG optique multi-LED (dos), accéléromètre 3 axes</td></tr>
+        <tr><th>Mesures</th><td>Fréquence cardiaque, VFC (RMSSD), mouvement</td></tr>
+        <tr><th>Détections</th><td>Stress, fatigue, sédentarité, bien-être global</td></tr>
+        <tr><th>Atouts</th><td>Référence personnelle, filtre de mouvement, tendance anticipée, décision expliquée</td></tr>
+        <tr><th>Retours</th><td>Vibration, anneau lumineux, écran tactile arrondi</td></tr>
+        <tr><th>Connectivité</th><td>Bluetooth basse consommation vers l’application</td></tr>
+        <tr><th>Autonomie</th><td>Cible : plusieurs jours</td></tr>
+        <tr><th>Résistance</th><td>Cible : étanche pour l’usage quotidien</td></tr>
+      </table>
+      <p class="hint">Valeurs cibles, à valider par des essais.</p>
+      <h2>Confidentialité par conception</h2>
+      <ul class="pv">
+        <li>Score calculé sur la montre ; seuls score, heure et alerte sont transmis.</li>
+        <li>Échanges avec le psychologue confidentiels.</li>
+        <li>Alertes désactivables dans les Réglages.</li>
+      </ul>
+      <h2>Parcours d’usage</h2>
+      <ul class="pv">
+        <li>La montre détecte, vibre et propose une action.</li>
+        <li>L’application s’ouvre avec les options adaptées.</li>
+        <li>L’activité choisie revient sur la montre ; la séance est enregistrée ou non.</li>
+      </ul>
+    </div>
+  </aside>
+</main>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function(){
+'use strict';
+var $=function(i){return document.getElementById(i);};
+// ===== Langues : FR / EN / AR =====
+var LANG='fr';
+try{var svl=localStorage.getItem('calmora-lang');if(svl==='fr'||svl==='en'||svl==='ar')LANG=svl;}catch(e){}
+var T=[
+['Calmora – Prototype 3D de la montre','Calmora – 3D watch prototype','Calmora – نموذج ثلاثي الأبعاد للساعة'],
+['Prototype interactif · bien-être au poignet','Interactive prototype · wellbeing on your wrist','نموذج تفاعلي · صحتك على معصمك'],
+['Données simulées','Simulated data','بيانات محاكاة'],
+['◐ Thème','◐ Theme','◐ المظهر'],
+['Changer le thème clair ou sombre','Switch between light and dark theme','التبديل بين المظهر الفاتح والداكن'],
+['Langue','Language','اللغة'],
+['Modèle 3D de la montre Calmora. Flèches gauche et droite pour tourner.','3D model of the Calmora watch. Use the left and right arrow keys to rotate.','نموذج ثلاثي الأبعاد لساعة Calmora. استخدم السهمين الأيمن والأيسر للتدوير.'],
+['Vue et application','View and app','العرض والتطبيق'],
+['Panneaux','Panels','اللوحات'],
+['Écran de la montre agrandi, cliquable','Enlarged watch screen, clickable','شاشة الساعة مكبّرة وقابلة للنقر'],
+['Courbe du score de stress et de la fréquence cardiaque','Chart of the stress score and heart rate','منحنى مؤشر التوتر ومعدل نبض القلب'],
+['Face','Front','الأمام'],['Dos','Back','الخلف'],['Éclatée','Exploded','مفكّكة'],['+ Application','+ App','+ التطبيق'],
+['Explorer','Explore','استكشاف'],['Détection','Detection','الكشف'],['Fiche produit','Product sheet','بطاقة المنتج'],
+['Coloris','Colors','الألوان'],['Nuit','Night','الليل'],['Violet','Violet','بنفسجي'],['Aurore','Dawn','فجري'],
+['État affiché','Displayed state','الحالة المعروضة'],['Au calme','Calm','هادئ'],['Stress détecté','Stress detected','تم رصد التوتر'],
+['Écran de la montre','Watch screen','شاشة الساعة'],
+['Échap ouvre ou ferme le menu.','Esc opens or closes the menu.','يفتح زر Esc القائمة أو يغلقها.'],
+['Accueil','Home','الرئيسية'],['Menu','Menu','القائمة'],['Respiration','Breathing','التنفّس'],['Activités','Activities','الأنشطة'],['Étirements','Stretching','التمدّد'],['Sommeil','Sleep','النوم'],['Historique','History','السجل'],['Réglages','Settings','الإعدادات'],
+['Score de stress','Stress score','مؤشر التوتر'],['Score de fatigue','Fatigue score','مؤشر التعب'],['Score de sédentarité','Inactivity score','مؤشر الخمول'],['En veille','Standby','في الانتظار'],
+['Scénario','Scenario','السيناريو'],
+['Stress aigu','Acute stress','توتر حاد'],['Effort physique','Physical effort','جهد بدني'],['Pic soudain','Sudden spike','ارتفاع مفاجئ'],['Tension légère','Mild tension','توتر خفيف'],['Fatigue','Fatigue','التعب'],['Sédentarité','Sedentary lifestyle','الخمول'],
+['FC en hausse, VFC en baisse au repos. Alerte attendue.','HR rising, HRV dropping at rest. Alert expected.','ارتفاع النبض وانخفاض تقلّبه أثناء الراحة. التنبيه متوقَّع.'],
+['FC élevée par une course. Pas d’alerte : mouvement détecté.','High HR from a run. No alert: movement detected.','نبض مرتفع بسبب الجري. لا تنبيه: رُصدت حركة.'],
+['Hausse brutale sans mouvement. Alerte rapide.','Sudden rise without movement. Quick alert.','ارتفاع مفاجئ دون حركة. تنبيه سريع.'],
+['Légère hausse de la FC, sous le seuil : pas d’alerte. Sans apprentissage (0 jour), fausse alerte.','Slight rise in HR, below the threshold: no alert. Without learning (0 days), a false alert.','ارتفاع طفيف في النبض دون العتبة: لا تنبيه. دون تعلّم (0 يوم) يحدث تنبيه خاطئ.'],
+['VFC basse, FC un peu haute sans effort : pause ou sieste proposée.','Low HRV, slightly high HR without effort: break or nap suggested.','تقلّب نبض منخفض ونبض مرتفع قليلًا دون جهد: تُقترح استراحة أو قيلولة.'],
+['Longue immobilité : pause active proposée (1 s ≈ 8 min).','Long inactivity: active break suggested (1 s ≈ 8 min).','خمول طويل: تُقترح استراحة نشطة (1 ث ≈ 8 د).'],
+['Lancer la simulation','Start the simulation','بدء المحاكاة'],['Arrêter la simulation','Stop the simulation','إيقاف المحاكاة'],['Relancer la simulation','Restart the simulation','إعادة المحاكاة'],
+['Exporter la séance (CSV)','Export the session (CSV)','تصدير الجلسة (CSV)'],
+['Collecte','Collect','الجمع'],['Analyse','Analyze','التحليل'],['Alerte','Alert','التنبيه'],['Application','App','التطبيق'],['Accompagnement','Support','المرافقة'],['Suivi','Follow-up','المتابعة'],
+['Choisissez un scénario.','Choose a scenario.','اختر سيناريو.'],
+['Fréquence cardiaque','Heart rate','معدل النبض'],['VFC (RMSSD)','HRV (RMSSD)','تقلّب النبض (RMSSD)'],['Mouvement','Movement','الحركة'],['Persistance au-dessus du seuil','Time above the threshold','المدة فوق العتبة'],
+['Paramètres de détection','Detection settings','إعدادات الكشف'],
+['Seuil d’alerte','Alert threshold','عتبة التنبيه'],['Durée de confirmation','Confirmation time','مدة التأكيد'],['Mouvement maximal toléré','Maximum movement tolerated','أقصى حركة مسموحة'],
+['Modifiables pendant la simulation.','Editable during the simulation.','قابلة للتعديل أثناء المحاكاة.'],
+['Personnalisation sur plusieurs jours','Personalization over several days','التخصيص على مدى عدة أيام'],
+['La montre apprend la référence de la personne, puis adapte le seuil.','The watch learns the person’s own reference, then adapts the threshold.','تتعلّم الساعة المرجع الخاص بالشخص ثم تكيّف العتبة.'],
+['Jours d’apprentissage','Days of learning','أيام التعلّم'],
+['Période','Period','الفترة'],['FC repos','Resting HR','نبض الراحة'],['VFC repos','Resting HRV','تقلّب الراحة'],
+['Matin','Morning','الصباح'],['Après-midi','Afternoon','بعد الظهر'],['Soir','Evening','المساء'],
+['À 0 jour : référence générique (68 bpm · 45 ms).','At 0 days: generic reference (68 bpm · 45 ms).','عند 0 يوم: مرجع عام (68 نبضة/د · 45 م.ث).'],
+['Comparaison avec une référence générique','Comparison with a generic reference','مقارنة مع مرجع عام'],
+['alerte','alert','تنبيه'],['pas d’alerte','no alert','لا تنبيه'],
+['La personnalisation évite une fausse alerte.','Personalization avoids a false alert.','يتجنّب التخصيص تنبيهًا خاطئًا.'],
+['La personnalisation détecte un stress que la référence générique aurait manqué.','Personalization detects a stress state that the generic reference would have missed.','يرصد التخصيص حالة توتر كان المرجع العام سيفوّتها.'],
+['Résultat identique avec les deux références.','Same result with both references.','النتيجة نفسها مع المرجعين.'],
+['Capteur optique (PPG) + accéléromètre → filtrage → FC et VFC → score → décision → alerte Bluetooth. Mesures pendant ou juste après un mouvement ignorées ; pause de 30 min après une alerte.','Optical sensor (PPG) + accelerometer → filtering → HR and HRV → score → decision → Bluetooth alert. Measurements during or just after movement are ignored; 30 min pause after an alert.','مستشعر ضوئي (PPG) + مقياس تسارع ← تصفية ← النبض وتقلّبه ← المؤشر ← القرار ← تنبيه عبر البلوتوث. تُتجاهل القياسات أثناء الحركة أو بعدها؛ توقّف 30 دقيقة بعد التنبيه.'],
+['Objectifs de conception','Design goals','أهداف التصميم'],
+['Capteurs','Sensors','المستشعرات'],['PPG optique multi-LED (dos), accéléromètre 3 axes','Multi-LED optical PPG (back), 3-axis accelerometer','PPG ضوئي متعدد الـLED (خلفي)، مقياس تسارع ثلاثي المحاور'],
+['Mesures','Measurements','القياسات'],['Fréquence cardiaque, VFC (RMSSD), mouvement','Heart rate, HRV (RMSSD), movement','معدل النبض، تقلّب النبض (RMSSD)، الحركة'],
+['Détections','Detections','الرصد'],['Stress, fatigue, sédentarité, bien-être global','Stress, fatigue, inactivity, overall wellbeing','التوتر، التعب، الخمول، الصحة العامة'],
+['Retours','Feedback','الإشعارات'],['Vibration, anneau lumineux, écran tactile arrondi','Vibration, light ring, rounded touchscreen','اهتزاز، حلقة ضوئية، شاشة لمس منحنية'],
+['Connectivité','Connectivity','الاتصال'],['Bluetooth basse consommation vers l’application','Low-energy Bluetooth to the app','بلوتوث منخفض الطاقة نحو التطبيق'],
+['Score ≥ seuil (70) pendant 3 s, mouvement < 0,3 g, pause 30 min','Score ≥ threshold (70) for 3 s, movement < 0.3 g, 30 min pause','المؤشر ≥ العتبة (70) لمدة 3 ث، حركة < 0٫3 g، توقّف 30 دقيقة'],
+['Autonomie','Battery life','الاستقلالية'],['Cible : plusieurs jours','Target: several days','الهدف: عدة أيام'],
+['Résistance','Resistance','المتانة'],['Cible : étanche pour l’usage quotidien','Target: waterproof for daily use','الهدف: مقاومة للماء للاستخدام اليومي'],
+['Valeurs cibles, à valider par des essais.','Target values, to be validated by testing.','قيم مستهدفة تحتاج إلى تحقق بالتجارب.'],
+['Confidentialité par conception','Privacy by design','الخصوصية بالتصميم'],
+['Score calculé sur la montre ; seuls score, heure et alerte sont transmis.','Score computed on the watch; only score, time and alert are sent.','يُحسب المؤشر على الساعة؛ ولا يُرسل سوى المؤشر والوقت والتنبيه.'],
+['Seuls le score, l’heure et l’alerte sont transmis à l’application.','Only the score, the time and the alert are sent to the app.','لا يُرسل إلى التطبيق سوى المؤشر والوقت والتنبيه.'],
+['Échanges avec le psychologue confidentiels.','Confidential exchanges with the psychologist.','التواصل مع الأخصائي النفسي سرّي.'],
+['Alertes désactivables dans les Réglages.','Alerts can be turned off in Settings.','يمكن إيقاف التنبيهات من الإعدادات.'],
+['Parcours d’usage','User journey','مسار الاستخدام'],
+['La montre détecte, vibre et propose une action.','The watch detects, vibrates and suggests an action.','تكتشف الساعة وتهتز وتقترح إجراءً.'],
+['L’application s’ouvre avec les options adaptées.','The app opens with suitable options.','يُفتح التطبيق بالخيارات المناسبة.'],
+['L’activité choisie revient sur la montre ; la séance est enregistrée ou non.','The chosen activity returns to the watch; the session is saved or not.','يعود النشاط المختار إلى الساعة، ثم تُحفظ الجلسة أو لا.'],
+['Enregistrer la séance','Save the session','حفظ الجلسة'],['Ne pas enregistrer','Don’t save','عدم الحفظ'],['Séance non enregistrée','Session not saved','لم تُحفظ الجلسة'],
+['Application ouverte : choisissez une option.','App opened: choose an option.','فُتح التطبيق: اختر خيارًا.'],
+['Séance non enregistrée · alertes en pause 30 min.','Session not saved · alerts paused 30 min.','لم تُحفظ الجلسة · التنبيهات متوقفة 30 د.'],
+['Terminé : alerte émise, séance non enregistrée.','Done: alert sent, session not saved.','انتهت: أُرسل التنبيه ولم تُحفظ الجلسة.'],
+['Verre','Glass','الزجاج'],['Écran tactile','Touchscreen','شاشة اللمس'],['Cadre','Frame','الإطار'],['Boîtier','Case','الهيكل'],['Carte électronique','Circuit board','اللوحة الإلكترونية'],['Batterie','Battery','البطارية'],['Capteur optique','Optical sensor','المستشعر الضوئي'],
+// légendes de la scène
+['Faites glisser pour tourner. Touchez l’écran ou la couronne.','Drag to rotate. Tap the screen or the crown.','اسحب للتدوير. المس الشاشة أو التاج.'],
+['Vue éclatée des 7 composants.','Exploded view of the 7 components.','منظر مفكّك للمكوّنات السبعة.'],
+['Face : calme, rythme cardiaque, alerte.','Front: calm, heart rate, alert.','الأمام: الهدوء، النبض، التنبيه.'],
+['Dos : capteur optique (4 LED).','Back: optical sensor (4 LEDs).','الخلف: مستشعر ضوئي (4 مصابيح).'],
+['Séance terminée. Exportez ou changez de scénario.','Session finished. Export or change scenario.','انتهت الجلسة. صدّر أو غيّر السيناريو.'],
+// états de la détection
+['Étalonnage','Calibration','المعايرة'],
+['Activité en cours : détection du stress en pause.','Activity in progress: stress detection paused.','نشاط جارٍ: الكشف عن التوتر متوقف مؤقتًا.'],
+['Mouvement détecté : mesure ignorée.','Movement detected: measurement ignored.','رُصدت حركة: تم تجاهل القياس.'],
+['Récupération après mouvement : mesure ignorée.','Recovery after movement: measurement ignored.','تعافٍ بعد الحركة: تم تجاهل القياس.'],
+['Alerte envoyée à l’application (Bluetooth).','Alert sent to the app (Bluetooth).','أُرسل التنبيه إلى التطبيق (بلوتوث).'],
+['Application ouverte : choisissez une option.','App opened: choose an option.','فُتح التطبيق: اختر خيارًا.'],
+['Séance enregistrée · alertes en pause 30 min.','Session recorded · alerts paused 30 min.','سُجّلت الجلسة · التنبيهات متوقفة 30 د.'],
+['Terminé : alerte émise et suivie.','Done: alert sent and followed up.','انتهت: أُرسل التنبيه وتمت المتابعة.'],
+['Terminé : aucune alerte, comme attendu.','Done: no alert, as expected.','انتهت: لا تنبيه، كما هو متوقَّع.'],
+['stress confirmé','stress confirmed','تم تأكيد التوتر'],['fatigue confirmée','fatigue confirmed','تم تأكيد التعب'],['inactivité prolongée confirmée','prolonged inactivity confirmed','تم تأكيد الخمول المطوّل'],
+['Pause 30 min','30 min pause','توقّف 30 د'],['Alerte émise','Alert sent','أُرسل التنبيه'],['Mesure ignorée','Measurement ignored','قياس متجاهَل'],['Seuil dépassé','Threshold exceeded','تم تجاوز العتبة'],['Surveillance','Monitoring','المراقبة'],
+['Séance enregistrée','Session recorded','سُجّلت الجلسة'],['Aucune alerte','No alert','لا تنبيه'],
+['mouvement','movement','حركة'],['activité','activity','نشاط'],['récupération','recovery','تعافٍ'],['repos','rest','راحة'],
+['Mesures ignorées (grisé)','Ignored measurements (grey)','قياسات متجاهَلة (رمادي)'],['FC (40–140 bpm)','HR (40–140 bpm)','النبض (40–140)'],
+// explications
+['stress probable au repos','probable stress at rest','توتر محتمل أثناء الراحة'],
+['VFC basse et FC un peu élevée sans effort, donc récupération insuffisante','low HRV and slightly high HR without effort, so insufficient recovery','تقلّب نبض منخفض ونبض مرتفع قليلًا دون جهد، أي تعافٍ غير كافٍ'],
+['Coucher plus tôt','Go to bed earlier','النوم مبكرًا'],['Pause 10 min','10 min break','استراحة 10 د'],['Étirements 1 min','Stretching 1 min','تمدّد 1 د'],
+// KIND
+['Niveau de stress','Stress level','مستوى التوتر'],['niveau de calme','calm level','مستوى الهدوء'],['Respirons ensemble','Let’s breathe together','لنتنفّس معًا'],['Stress inhabituel détecté','Unusual stress detected','رُصد توتر غير معتاد'],['Énergie en baisse','Energy running low','الطاقة في انخفاض'],['Vous semblez stressé','You seem stressed','يبدو أنك متوتر'],
+['Niveau de fatigue','Fatigue level','مستوى التعب'],['niveau d’énergie','energy level','مستوى الطاقة'],['Faisons une pause','Let’s take a break','لنأخذ استراحة'],['Fatigue détectée','Fatigue detected','رُصد تعب'],['Vous semblez fatigué','You seem tired','يبدو أنك متعب'],
+['Niveau d’inactivité','Inactivity level','مستوى الخمول'],['niveau d’activité','activity level','مستوى النشاط'],['Bougeons un peu','Let’s move a bit','لنتحرّك قليلًا'],['Inactivité prolongée','Prolonged inactivity','خمول مطوّل'],['Immobile depuis longtemps','Still for a long time','ثابت منذ مدة طويلة'],['Il est temps de bouger','Time to move','حان وقت الحركة'],
+['Guidée · 1 minute','Guided · 1 minute','موجّه · دقيقة'],['Relaxation','Relaxation','الاسترخاء'],['Détente musculaire guidée','Guided muscle relaxation','استرخاء عضلي موجّه'],['Mini-jeux','Mini-games','ألعاب مصغّرة'],['Se changer les idées','Clear your mind','لتغيير الأجواء'],['Assistant IA','AI assistant','المساعد الذكي'],['Parler de ce que je ressens','Talk about how I feel','التحدث عمّا أشعر به'],['Psychologue','Psychologist','الأخصائي النفسي'],['Partenaire · confidentiel','Partner · confidential','شريك · سرّي'],
+['Sieste de 20 min conseillée','20 min nap recommended','يُنصح بقيلولة 20 دقيقة'],['Parler de ma fatigue','Talk about my fatigue','التحدث عن تعبي'],
+['Marche 10 min conseillée','10 min walk recommended','يُنصح بمشي 10 دقائق'],['Pause active · 1 minute','Active break · 1 minute','استراحة نشطة · دقيقة'],['Bien-être','Wellbeing','الصحة العامة'],['Voir mon activité du jour','See my activity today','عرض نشاطي اليوم'],['Un défi pour se dégourdir','A challenge to get moving','تحدٍّ لتنشيط الجسم'],
+// montre
+['Touchez pour le menu','Tap for the menu','المس لفتح القائمة'],['‹ Menu','‹ Menu','› القائمة'],['Inspirez','Breathe in','شهيق'],['Expirez','Breathe out','زفير'],['Rythme (secondes)','Rhythm (seconds)','الإيقاع (ثوانٍ)'],['Mode discret','Discreet mode','الوضع الصامت'],['Suivez les vibrations','Follow the vibrations','تابع الاهتزازات'],['Quitter','Quit','خروج'],
+['Marche','Walk','مشي'],['Course','Run','جري'],['Yoga','Yoga','يوغا'],['Vélo','Cycling','دراجة'],
+['Alertes de stress en pause pendant l’activité','Stress alerts paused during the activity','تنبيهات التوتر متوقفة أثناء النشاط'],['Zone modérée · détection en pause','Moderate zone · detection paused','منطقة معتدلة · الكشف متوقف'],['Terminer','Finish','إنهاء'],
+['4 étapes de 15 secondes','4 steps of 15 seconds','4 مراحل من 15 ثانية'],['Démarrer','Start','ابدأ'],['Terminé','Done','تم'],['Recommencer','Restart','إعادة'],
+['Cou','Neck','الرقبة'],['Épaules','Shoulders','الكتفان'],['Poignets','Wrists','المعصمان'],
+['Nuit dernière · exemple','Last night · example','الليلة الماضية · مثال'],['Un bon sommeil aide à mieux gérer le stress.','Good sleep helps you manage stress better.','النوم الجيد يساعد على التحكم في التوتر.'],
+['Cette semaine','This week','هذا الأسبوع'],['Stress moyen par jour · exemple','Average stress per day · example','متوسط التوتر يوميًا · مثال'],
+['Vibration','Vibration','الاهتزاز'],['Alertes stress','Stress alerts','تنبيهات التوتر'],['Sensibilité','Sensitivity','الحساسية'],['Basse','Low','منخفضة'],['Moyenne','Medium','متوسطة'],['Haute','High','مرتفعة'],
+['Tout va bien','All good','كل شيء على ما يرام'],
+// téléphone
+['Élevé','High','مرتفع'],['Normal','Normal','عادي'],['Mini-jeux','Mini-games','ألعاب مصغّرة'],['Suivi','Follow-up','المتابعة'],
+['‹ Accueil','‹ Home','› الرئيسية'],['‹ Options','‹ Options','› الخيارات'],
+['Rythme 4 · 6 secondes','Rhythm 4 · 6 seconds','الإيقاع 4 · 6 ثوانٍ'],['Bulles','Bubbles','الفقاعات'],
+['Comment vous sentez-vous ?','How are you feeling?','كيف تشعر؟'],['Stressé','Stressed','متوتر'],['Fatigué','Tired','متعب'],['Ça va','I’m fine','بخير'],
+['Respirons ensemble 1 min.','Let’s breathe together for 1 min.','لنتنفّس معًا لدقيقة.'],['Faites une courte pause.','Take a short break.','خذ استراحة قصيرة.'],['Parfait, je reste là.','Great, I’m here if you need me.','رائع، أنا هنا إن احتجتني.'],
+['Lancer la respiration','Start breathing','ابدأ التنفّس'],['Envoyé à la montre ✓','Sent to the watch ✓','أُرسل إلى الساعة ✓'],
+['Psychologue partenaire','Partner psychologist','الأخصائي النفسي الشريك'],['Échange confidentiel','Confidential conversation','محادثة سرّية'],['Écrire un message','Write a message','كتابة رسالة'],['Appeler','Call','اتصال'],['Prendre rendez-vous','Book an appointment','حجز موعد'],['Demande envoyée','Request sent','أُرسل الطلب'],
+['Envoyer à la montre','Send to the watch','إرسال إلى الساعة'],['Envoyé','Sent','أُرسل'],['Envoyer','Send','إرسال'],
+['Aucune séance enregistrée','No session recorded','لا توجد جلسة مسجّلة'],['Lancez la simulation.','Start the simulation.','ابدأ المحاكاة.'],['Score de stress au fil de la séance','Stress score during the session','مؤشر التوتر خلال الجلسة'],
+['Ouverture de Calmora…','Opening Calmora…','جارٍ فتح Calmora…'],['Que voulez-vous faire ?','What would you like to do?','ماذا تريد أن تفعل؟'],['Recommandé','Recommended','موصى به'],
+['Historique mis à jour','History updated','تم تحديث السجل'],
+['Relâchez les épaules','Relax your shoulders','أرخِ كتفيك'],['Détendez la mâchoire','Relax your jaw','أرخِ فكّك'],['Desserrez les mains','Loosen your hands','أرخِ يديك'],['Laissez partir la tension','Let the tension go','دَع التوتر يزول'],
+['Un bon sommeil réduit le stress','Good sleep reduces stress','النوم الجيد يقلّل التوتر'],['Programmer une sieste','Schedule a nap','جدولة قيلولة'],['Sieste programmée ✓','Nap scheduled ✓','تمت جدولة القيلولة ✓'],['Rappel de coucher','Bedtime reminder','تذكير بالنوم'],['Rappel 22 h 30 activé ✓','22:30 reminder on ✓','تم تفعيل تذكير 22:30 ✓'],
+['Calme','Calm','الهدوء'],['Activité','Activity','النشاط'],['Récupération','Recovery','التعافي'],['score bien-être du jour','today’s wellbeing score','مؤشر الصحة العامة اليوم'],['Séquence','Sequence','التسلسل'],['Mémorisez et répétez','Memorize and repeat','احفظ ثم كرّر'],['Paires','Pairs','أزواج'],['Retrouvez les cartes','Find the matching cards','اعثر على البطاقات المتطابقة'],['Observez','Watch','راقب'],['À vous','Your turn','دورك'],['Trouvez les paires','Find the pairs','اعثر على الأزواج'],['Psychologues','Psychologists','الأخصائيون النفسيون'],['Profil','Profile','الملف'],['Trouver un psychologue','Find a psychologist','ابحث عن أخصائي'],['Tous','All','الكل'],['Anxiété','Anxiety','القلق'],['Sommeil','Sleep','النوم'],['Burn-out','Burnout','الإنهاك'],['Stress','Stress','التوتر'],['Autre','Other','أخرى'],['Visio','Video','عن بُعد'],['Cabinet','In person','حضوري'],['Mode de consultation','Consultation type','نوع الاستشارة'],['Motif','Reason','السبب'],['Partager mon suivi (optionnel)','Share my tracking (optional)','مشاركة متابعتي (اختياري)'],['Suivi partagé ✓','Tracking shared ✓','تمت مشاركة المتابعة ✓'],['Score moyen et efficacité des séances, avec votre accord.','Average score and session results, with your consent.','متوسط المؤشر ونتائج الجلسات، بموافقتك.'],['Choisir un créneau','Choose a slot','اختر موعدًا'],['Annuler','Cancel','إلغاء'],['Annulée','Cancelled','أُلغيت'],['Demandes','Requests','الطلبات'],['Confirmées','Confirmed','المؤكّدة'],['Commission','Commission','العمولة'],['En cas d’urgence, contactez les secours.','In an emergency, contact emergency services.','في حالة الطوارئ، اتصل بالإسعاف.'],['Profils d’exemple · tarifs indicatifs','Example profiles · indicative fees','ملفات مثال · أسعار إرشادية'],['Psychologue clinicienne','Clinical psychologist','أخصائية نفسية إكلينيكية'],['Psychothérapeute TCC','CBT psychotherapist','معالج نفسي (CBT)'],['Psychologue du travail','Occupational psychologist','أخصائية علم نفس العمل'],['Psychologue clinicien','Clinical psychologist','أخصائي نفسي إكلينيكي'],['Messages','Messages','الرسائل'],['Appel','Call','مكالمة'],['Choisissez un message pour commencer.','Choose a message to start.','اختر رسالة للبدء.'],['Écrit…','Typing…','يكتب…'],['Disponible maintenant','Available now','متاح الآن'],['Indisponible pour le moment','Unavailable right now','غير متاح حاليًا'],['Appel vocal','Voice call','مكالمة صوتية'],['Appel en cours…','Calling…','جارٍ الاتصال…'],['Muet','Mute','كتم'],['Muet ✓','Muted ✓','مكتوم ✓'],['Haut-parleur','Speaker','مكبّر الصوت'],['Haut-parleur ✓','Speaker on ✓','مكبّر الصوت ✓'],['Raccrocher','Hang up','إنهاء'],['Appel terminé','Call ended','انتهت المكالمة'],['Durée','Duration','المدة'],['Bonjour, j’aimerais un rendez-vous.','Hello, I’d like an appointment.','مرحبًا، أودّ حجز موعد.'],['Bonjour, avec plaisir. Choisissez un créneau dans « Prendre rendez-vous ».','Hello, gladly. Pick a slot in “Book an appointment”.','مرحبًا، بكل سرور. اختر موعدًا من «حجز موعد».'],['Je me sens stressé(e) ces derniers jours.','I’ve been feeling stressed lately.','أشعر بالتوتر في الأيام الأخيرة.'],['Merci de me le dire. Respirez calmement ; nous pouvons en parler en consultation.','Thank you for telling me. Breathe calmly; we can talk about it in a session.','شكرًا لإخباري. تنفّس بهدوء؛ يمكننا الحديث عن ذلك في الاستشارة.'],['J’ai du mal à dormir.','I have trouble sleeping.','أجد صعوبة في النوم.'],['Je comprends. Gardez des horaires réguliers ; nous en parlerons ensemble.','I understand. Keep regular hours; we’ll talk about it together.','أفهم ذلك. حافظ على مواعيد منتظمة؛ وسنتحدث عن ذلك معًا.'],['Merci beaucoup.','Thank you very much.','شكرًا جزيلًا.'],['Avec plaisir. Je reste disponible.','My pleasure. I remain available.','بكل سرور. أنا متاح دائمًا.'],['Motif (facultatif)','Reason (optional)','السبب (اختياري)'],['Écrivez en quelques mots…','Write a few words…','اكتب بضع كلمات…'],['Sans motif précis','No specific reason','دون سبب محدد'],['✎ Écrire un message…','✎ Write a message…','✎ اكتب رسالة…'],['Merci pour votre message. Je vous réponds dès que possible.','Thank you for your message. I will reply as soon as possible.','شكرًا على رسالتك. سأردّ في أقرب وقت ممكن.'],['Valider','Confirm','تأكيد'],['Écrivez ici…','Write here…','اكتب هنا…'],['Aucun rendez-vous confirmé','No confirmed appointment','لا يوجد موعد مؤكّد'],['Prochain rendez-vous','Next appointment','الموعد القادم'],['Recommandé pour vous','Recommended for you','موصى به لك'],['Pour commencer','To get started','للبدء'],['Commencer','Start','ابدأ'],['Réinitialiser','Reset','إعادة ضبط'],['Plein écran','Fullscreen','ملء الشاشة'],['Quitter le plein écran','Exit fullscreen','الخروج من ملء الشاشة'],['Séance courte · 20 s','Short session · 20 s','جلسة قصيرة · 20 ث'],['Le score est comparé avant et après.','The score is compared before and after.','تُقارَن النتيجة قبل الجلسة وبعدها.'],['Avant','Before','قبل'],['Après','After','بعد'],['Mesure simulée','Simulated measurement','قياس محاكى'],['Voir l’efficacité','See effectiveness','عرض الفعالية'],['Rythme','Rhythm','الإيقاع'],['Suivez le cercle','Follow the circle','تابع الدائرة'],['Touchez les bulles','Pop the bubbles','المس الفقاعات'],['Touchez quand le cercle atteint l’anneau','Tap when the circle reaches the ring','المس عندما تبلغ الدائرة الحلقة'],['Réussis','Hits','النجاحات'],['Séance','Session','الجلسة'],['Efficacité','Effectiveness','الفعالية'],['Séances','Sessions','الجلسات'],['Faites une séance de chaque option.','Do one session of each option.','جرّب جلسة من كل خيار.'],['Baisse moyenne du score · simulée','Average score drop · simulated','متوسط انخفاض المؤشر · محاكاة'],['Rendez-vous','Appointment','موعد'],['‹ Retour','‹ Back','› رجوع'],['Continuer','Continue','متابعة'],['Mes demandes','My requests','طلباتي'],['Nouveau rendez-vous','New appointment','موعد جديد'],['Tarif de la consultation','Consultation fee','سعر الاستشارة'],['Commission Calmora','Calmora commission','عمولة Calmora'],['Payée par le psychologue partenaire, sans surcoût pour vous.','Paid by the partner psychologist, at no extra cost to you.','يدفعها الأخصائي الشريك دون أي تكلفة إضافية عليك.'],['Envoyer la demande','Send request','إرسال الطلب'],['Envoyée','Sent','أُرسلت'],['Vue','Seen','تمت المشاهدة'],['Confirmée','Confirmed','مؤكّدة'],['Commission estimée','Estimated commission','العمولة المقدّرة'],['Aucune demande en cours','No request yet','لا توجد طلبات'],['Créneaux disponibles','Available slots','المواعيد المتاحة'],['Données d’exemple','Sample data','بيانات مثال'],['Discussion libre · réponses simulées','Open chat · simulated replies','محادثة حرة · ردود محاكاة'],['Nouvelle discussion','New chat','محادثة جديدة'],['Écrire un message','Write a message','كتابة رسالة']
+,['Récompenses','Rewards','المكافآت'],['Aperçu','Overview','نظرة عامة'],['Badges','Badges','الشارات'],['Avantages','Perks','المزايا'],['séances aujourd’hui','sessions today','جلسات اليوم'],['Points','Points','النقاط'],['Série (jours)','Streak (days)','التتابع (أيام)'],['Niveau maximum','Maximum level','المستوى الأقصى'],['Défi hebdo','Weekly challenge','تحدي الأسبوع'],['Bonus : +30 pts à 5 séances','Bonus: +30 pts at 5 sessions','مكافأة: +30 نقطة عند 5 جلسات'],['Défi réussi · +30 pts','Challenge done · +30 pts','تم التحدي · +30 نقطة'],['Jour suivant (démo)','Next day (demo)','اليوم التالي (تجريبي)'],['Éveil','Awakening','اليقظة'],['Sérénité','Serenity','السكينة'],['Harmonie','Harmony','الانسجام'],['Zen','Zen','زن'],['Premier souffle','First breath','النفَس الأول'],['Respiration · 1 séance','Breathing · 1 session','تنفّس · جلسة'],['Détente','Unwind','استرخاء'],['Relaxation · 1 séance','Relaxation · 1 session','استرخاء · جلسة'],['Joueur zen','Zen player','لاعب هادئ'],['Mini-jeux · 1 séance','Mini-games · 1 session','ألعاب · جلسة'],['Série 3 jours','3-day streak','3 أيام متتالية'],['3 jours d’affilée','3 days in a row','3 أيام متتالية'],['Série 7 jours','7-day streak','7 أيام متتالية'],['7 jours d’affilée','7 days in a row','7 أيام متتالية'],['Séance gardée','Session kept','جلسة محفوظة'],['Séance enregistrée','Session recorded','جلسة مسجّلة'],['100 points','100 points','100 نقطة'],['Cumulez 100 pts','Earn 100 pts','اجمع 100 نقطة'],['Grande détente','Deep calm','هدوء عميق'],['Baisse ≥ 20 pts','Drop ≥ 20 pts','انخفاض ≥ 20 نقطة'],['Tisanes −10 %','Herbal teas −10 %','أعشاب −10 %'],['Boutique partenaire','Partner shop','متجر شريك'],['Méditation 1 mois','Meditation 1 month','تأمل شهر'],['Application partenaire','Partner app','تطبيق شريك'],['Séance psy offerte','Free therapy session','جلسة نفسية مجانية'],['Psychologue partenaire','Partner psychologist','الأخصائي النفسي الشريك'],['Don solidaire','Charity donation','تبرع خيري'],['Fait en votre nom','Made in your name','باسمك'],['Débloquer','Unlock','فتح'],['Débloqué ✓','Unlocked ✓','مفتوح ✓'],['Points insuffisants','Not enough points','النقاط غير كافية'],
+['Fiabilité du signal','Signal reliability','موثوقية الإشارة'],['Tendance','Trend','الاتجاه'],['stable','steady','مستقر'],['Pré-alerte','Early warning','تحذير مبكر'],['Calmora face à une montre classique','Calmora vs a classic watch','Calmora مقابل ساعة تقليدية'],['Classique : seuil fixe, sans filtre de mouvement.','Classic: fixed threshold, no motion filter.','التقليدية: عتبة ثابتة دون مرشّح حركة.'],['Montre classique','Classic watch','ساعة تقليدية'],['Calmora sans apprentissage','Calmora, no learning','Calmora بلا تعلّم'],['Calmora personnalisée','Calmora, personalized','Calmora مخصّصة'],['Calmora évite l’erreur de la montre classique.','Calmora avoids the classic watch’s mistake.','تتجنّب Calmora خطأ الساعة التقليدية.'],['La montre classique fait mieux ici.','The classic watch does better here.','الساعة التقليدية أفضل هنا.'],['Même résultat que la montre classique.','Same result as the classic watch.','النتيجة نفسها مثل الساعة التقليدية.'],
+['Score','Score','المؤشر'],['FC','HR','النبض'],['Classique','Classic','التقليدية'],
+['Stress détecté','Stress detected','تم رصد توتر'],['Fatigue détectée','Fatigue detected','تم رصد تعب'],['Inactivité détectée','Inactivity detected','تم رصد خمول'],['Touchez pour ouvrir l’application','Tap to open the app','المس لفتح التطبيق'],['maintenant','now','الآن'],['┄ Classique','┄ Classic','┄ التقليدية'],['Atouts','Strengths','المزايا'],['Référence personnelle, filtre de mouvement, tendance anticipée, décision expliquée','Personal baseline, motion filter, early trend, explained decision','مرجع شخصي، مرشّح حركة، اتجاه استباقي، قرار مُفسَّر']
+];
+var D={en:{},ar:{}};
+T.forEach(function(r){D.en[r[0]]=r[1];D.ar[r[0]]=r[2];});
+var R=[
+[/^\+(\d+) pts Calme$/,'+$1 Calm pts','+$1 نقطة هدوء'],
+[/^Niveau (\d+)$/,'Level $1','المستوى $1'],
+[/^(\d+) pts avant le niveau suivant$/,'$1 pts to next level','$1 نقطة للمستوى التالي'],
+[/^(\d+) \/ (\d+) séances$/,'$1 / $2 sessions','$1 / $2 جلسات'],
+[/^(\d+) \/ (\d+) badges$/,'$1 / $2 badges','$1 / $2 شارات'],
+[/^Solde : (\d+) pts$/,'Balance: $1 pts','الرصيد: $1 نقطة'],
+[/^(\d+) pts$/,'$1 pts','$1 نقطة'],
+[/^([+−]\d+) pts\/s$/,'$1 pts/s','$1 نقطة/ث'],
+[/^Tendance à la hausse : seuil dans ~(\d+) s\.$/,'Rising trend: threshold in ~$1 s.','اتجاه تصاعدي: العتبة خلال ~$1 ث.'],
+[/^Fausses alertes écartées par le filtre : ([\d.]+) s$/,'False alerts blocked by the filter: $1 s','تنبيهات خاطئة حجبها المرشّح: $1 ث'],
+[/^Simulation : (.+)$/,'Simulation: $1','المحاكاة: $1'],
+[/^Étalonnage : mesure de la référence au repos \((\d+) bpm, VFC (\d+) ms\)\.$/,'Calibration: measuring the resting reference ($1 bpm, HRV $2 ms).','المعايرة: قياس المرجع أثناء الراحة ($1 نبضة/د، تقلّب $2 م.ث).'],
+[/^Seuil dépassé : confirmation en cours \(([\d.]+) s sur ([\d.]+) s\)\.$/,'Threshold exceeded: confirming ($1 s of $2 s).','تم تجاوز العتبة: جارٍ التأكيد ($1 ث من $2 ث).'],
+[/^Surveillance : score (\d+) \/ 100, sous le seuil de (\d+)\.$/,'Monitoring: score $1 / 100, below the threshold of $2.','المراقبة: المؤشر $1 / 100، دون العتبة $2.'],
+[/^Alerte : (.+), la montre vibre\.$/,'Alert: $1, the watch vibrates.','تنبيه: $1، والساعة تهتز.'],
+[/^(\d+) bpm \(réf\. (\d+)\)$/,'$1 bpm (ref. $2)','$1 نبضة/د (المرجع $2)'],
+[/^(\d+) ms \(réf\. (\d+)\)$/,'$1 ms (ref. $2)','$1 م.ث (المرجع $2)'],
+[/^([\d.]+) g · (.+)$/,'$1 g · $2','$1 g · $2'],
+[/^Immobile depuis ~(\d+) min$/,'Still for ~$1 min','ثابت منذ ~$1 دقيقة'],
+[/^([\d.]+) s \/ ([\d.]+) s$/,'$1 s / $2 s','$1 ث / $2 ث'],
+[/^(\d+) s$/,'$1 s','$1 ث'],
+[/^(\d+) j$/,'$1 d','$1 يوم'],
+[/^(\d+) min$/,'$1 min','$1 د'],
+[/^Seuil (\d+)$/,'Threshold $1','العتبة $1'],
+[/^● (.+)$/,'● $1','● $1'],
+[/^Seuil d’alerte : (\d+) \/ 100$/,'Alert threshold: $1 / 100','عتبة التنبيه: $1 / 100'],
+[/^Recommandé : (.+)$/,'Recommended: $1','موصى به: $1'],
+[/^Pour commencer : (.+)$/,'To get started: $1','للبدء: $1'],
+[/^Conseillé : (.+) · touchez$/,'Suggested: $1 · tap','مقترح: $1 · المس'],
+[/^Conseillé : (.+)$/,'Suggested: $1','مقترح: $1'],
+[/^(Marche|Course|Yoga|Vélo|Pause) (\d+) min$/,'$1 $2 min','$1 $2 د'],
+[/^(.+) → montre$/,'$1 → watch','$1 ← الساعة'],
+[/^Étape (\d) \/ 4 · détente guidée$/,'Step $1 / 4 · guided relaxation','المرحلة $1 / 4 · استرخاء موجّه'],
+[/^Étape (\d) \/ 4$/,'Step $1 / 4','المرحلة $1 / 4'],
+[/^Récupération (\d+) %$/,'Recovery $1 %','التعافي $1 %'],
+[/^Réussis · (\d+)$/,'Hits · $1','النجاحات · $1'],
+[/^Touchez les bulles · (\d+)$/,'Pop the bubbles · $1','المس الفقاعات · $1'],
+[/^Sur la montre : (.+)$/,'On the watch: $1','على الساعة: $1'],
+[/^Pic : (\d+) \/ 100$/,'Peak: $1 / 100','الذروة: $1 / 100'],
+[/^Pic de stress : (\d+) \/ 100$/,'Stress peak: $1 / 100','ذروة التوتر: $1 / 100'],
+[/^Retour à (\d+) \/ 100$/,'Back to $1 / 100','العودة إلى $1 / 100'],
+[/^\(simulation\) · (.+)$/,'(simulation) · $1','(محاكاة) · $1'],
+[/^(\d+) bpm, sans activité physique$/,'$1 bpm, no physical activity','$1 نبضة/د، دون نشاط بدني'],
+[/^Référence personnalisée à (\d+) % · seuil effectif (\d+) \(base (\d+) \+ adaptation (\d+)\)$/,'Reference personalized at $1 % · effective threshold $2 (base $3 + adaptation $4)','المرجع مخصّص بنسبة $1 % · العتبة الفعلية $2 (الأساس $3 + التكيّف $4)'],
+[/^Référence générique \((\d+) bpm · (\d+) ms\) : pic (\d+) \/ 100, (.+)$/,'Generic reference ($1 bpm · $2 ms): peak $3 / 100, $4','المرجع العام ($1 نبضة/د · $2 م.ث): الذروة $3 / 100، $4'],
+[/^Référence personnalisée \((\d+) bpm · (\d+) ms\) : pic (\d+) \/ 100, (.+)$/,'Personalized reference ($1 bpm · $2 ms): peak $3 / 100, $4','المرجع المخصّص ($1 نبضة/د · $2 م.ث): الذروة $3 / 100، $4']
+];
+function tr(s){
+  if(LANG==='fr'||!s)return s;
+  var v=D[LANG][s];if(v!==undefined)return v;
+  for(var i=0;i<R.length;i++){var m=s.match(R[i][0]);if(m){return R[i][LANG==='en'?1:2].replace(/\$(\d)/g,function(x,k){return tr(m[k]);});}}
+  return s;
+}
+function wrapCtx(c){var o=c.fillText.bind(c);c.fillText=function(s,x,y){o(LANG==='fr'?s:tr(String(s)),x,y);};}
+function fmt(tpl){var a=arguments;return tpl.replace(/\{(\d)\}/g,function(x,i){return a[+i+1];});}
+var WT={
+ fr:{ttl:'Pourquoi cette alerte ?',sed:'<p>Aucun mouvement depuis ~<b>{0} min</b> : score d’inactivité au-dessus de <b>{1}</b> pendant <b>{2} s</b>. Pause active recommandée.</p>',phy:'<p>Le score a dépassé <b>{0}</b> pendant <b>{1} s</b>, avec un mouvement de <b>{2} g</b> (limite {3} g) : {4}.</p>',hr:'Fréquence cardiaque · {0} bpm vs référence personnelle · poids {1} %',hrv:'VFC · {0} ms vs référence personnelle · poids {1} %',rec:'<p>Recommandation envoyée à la montre : <b>{0}</b> ({1}).</p>',night:'soir ou nuit : option douce',day:'journée : option active',idleT:'Explication de la décision',idle:'<p>Lancez une simulation : la raison de chaque alerte s’affichera ici.</p>',run:'<p>Surveillance en cours : aucune alerte pour l’instant.</p>',noT:'Pourquoi aucune alerte ?',noA:'Le score maximal ({0}) reste sous le seuil de {1} : pas de notification inutile.',noB:'Le score a approché le seuil, mais {0} % des mesures ont été ignorées (mouvement ou récupération) : fausse alerte évitée.',noC:'Le score a approché le seuil sans rester assez longtemps au-dessus ({0} s requises) : pas d’alerte.'},
+ en:{ttl:'Why this alert?',sed:'<p>No movement for ~<b>{0} min</b>: inactivity score above <b>{1}</b> for <b>{2} s</b>. Active break recommended.</p>',phy:'<p>The score exceeded <b>{0}</b> for <b>{1} s</b>, with a movement of <b>{2} g</b> (limit {3} g): {4}.</p>',hr:'Heart rate · {0} bpm vs personal reference · weight {1} %',hrv:'HRV · {0} ms vs personal reference · weight {1} %',rec:'<p>Recommendation sent to the watch: <b>{0}</b> ({1}).</p>',night:'evening or night: gentle option',day:'daytime: active option',idleT:'Decision explanation',idle:'<p>Start a simulation: the reason for each alert will appear here.</p>',run:'<p>Monitoring in progress: no alert so far.</p>',noT:'Why no alert?',noA:'The maximum score ({0}) stays below the threshold of {1}: no needless notification.',noB:'The score came close to the threshold, but {0} % of measurements were ignored (movement or recovery): false alert avoided.',noC:'The score came close to the threshold without staying above it long enough ({0} s required): no alert.'},
+ ar:{ttl:'لماذا هذا التنبيه؟',sed:'<p>لا حركة منذ ~<b>{0} دقيقة</b>: مؤشر الخمول فوق <b>{1}</b> لمدة <b>{2} ث</b>. يُنصح باستراحة نشطة.</p>',phy:'<p>تجاوز المؤشر <b>{0}</b> لمدة <b>{1} ث</b>، مع حركة قدرها <b>{2} g</b> (الحد {3} g): {4}.</p>',hr:'معدل النبض · {0} نبضة/د مقارنةً بالمرجع الشخصي · الوزن {1} %',hrv:'تقلّب النبض · {0} م.ث مقارنةً بالمرجع الشخصي · الوزن {1} %',rec:'<p>التوصية المرسلة إلى الساعة: <b>{0}</b> ({1}).</p>',night:'مساءً أو ليلًا: خيار هادئ',day:'نهارًا: خيار نشط',idleT:'تفسير القرار',idle:'<p>ابدأ المحاكاة: سيظهر هنا سبب كل تنبيه.</p>',run:'<p>المراقبة جارية: لا تنبيه حتى الآن.</p>',noT:'لماذا لا يوجد تنبيه؟',noA:'يبقى المؤشر الأقصى ({0}) دون العتبة {1}: لا إشعار بلا داعٍ.',noB:'اقترب المؤشر من العتبة، لكن {0} % من القياسات تم تجاهلها (حركة أو تعافٍ): تم تجنّب تنبيه خاطئ.',noC:'اقترب المؤشر من العتبة دون البقاء فوقها مدة كافية ({0} ث مطلوبة): لا تنبيه.'}
+};
+function applyLang(){
+  var de=document.documentElement;de.lang=LANG;de.dir=LANG==='ar'?'rtl':'ltr';
+  document.title=tr('Calmora – Prototype 3D de la montre');
+  var w=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT,null),n,list=[];
+  while((n=w.nextNode())){var p=n.parentNode;if(p&&(p.tagName==='SCRIPT'||p.tagName==='STYLE'))continue;list.push(n);}
+  list.forEach(function(nd){
+    var o=origMap.get(nd);if(o===undefined){o=nd.nodeValue;origMap.set(nd,o);}
+    var t=o.trim();if(!t)return;
+    var lead=o.slice(0,o.indexOf(t)),trail=o.slice(o.indexOf(t)+t.length);
+    nd.nodeValue=lead+tr(t)+trail;
+  });
+  [].slice.call(document.querySelectorAll('[aria-label]')).forEach(function(el){
+    var o=el.getAttribute('data-aria-fr');if(o===null){o=el.getAttribute('aria-label');el.setAttribute('data-aria-fr',o);}
+    el.setAttribute('aria-label',tr(o));
+  });
+  [].slice.call(document.querySelectorAll('[data-l]')).forEach(function(b){b.setAttribute('aria-pressed',b.getAttribute('data-l')===LANG?'true':'false');});var lc=$('lcur');if(lc)lc.textContent=LANG.toUpperCase();
+}
+var origMap=new WeakMap();
+
+var root=$('stage');
+if(!window.THREE){root.textContent='Le moteur 3D n’a pas pu être chargé : vérifiez la connexion.';return;}
+var reduce=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
+var TAU=Math.PI*2;
+var renderer=new THREE.WebGLRenderer({antialias:true,alpha:true});
+renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2));
+renderer.outputEncoding=THREE.sRGBEncoding;
+root.appendChild(renderer.domElement);
+var scene=new THREE.Scene();
+var cam=new THREE.PerspectiveCamera(32,1,.1,100);
+scene.add(new THREE.AmbientLight(0xffffff,.6));
+var key=new THREE.DirectionalLight(0xffffff,.9);key.position.set(3,4,6);scene.add(key);
+var l1=new THREE.PointLight(0x6ee0ea,1.3,20);l1.position.set(-4,-2,3);scene.add(l1);
+var l2=new THREE.PointLight(0xb79cff,1.1,20);l2.position.set(4,2,-3);scene.add(l2);
+(function(){var c=document.createElement('canvas');c.width=512;c.height=256;var x=c.getContext('2d');var g=x.createLinearGradient(0,0,0,256);g.addColorStop(0,'#2a3a80');g.addColorStop(.5,'#0c1330');g.addColorStop(1,'#050816');x.fillStyle=g;x.fillRect(0,0,512,256);x.fillStyle='#fff';x.fillRect(60,40,90,50);x.fillRect(330,30,120,40);x.fillStyle='#6ee0ea';x.fillRect(220,110,50,90);x.fillStyle='#b79cff';x.fillRect(440,100,50,80);var t=new THREE.CanvasTexture(c);t.mapping=THREE.EquirectangularReflectionMapping;t.encoding=THREE.sRGBEncoding;var pm=new THREE.PMREMGenerator(renderer);scene.environment=pm.fromEquirectangular(t).texture;pm.dispose();})();
+var gc0=document.createElement('canvas');gc0.width=gc0.height=256;var gx0=gc0.getContext('2d');var gg=gx0.createRadialGradient(128,128,0,128,128,128);gg.addColorStop(0,'rgba(110,224,234,.55)');gg.addColorStop(.5,'rgba(120,90,230,.22)');gg.addColorStop(1,'rgba(120,90,230,0)');gx0.fillStyle=gg;gx0.fillRect(0,0,256,256);
+var glow=new THREE.Mesh(new THREE.PlaneGeometry(7,7),new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(gc0),transparent:true,depthWrite:false}));glow.position.z=-2.5;scene.add(glow);
+
+function rr(w,h,r){var s=new THREE.Shape(),x=-w/2,y=-h/2;
+s.moveTo(x+r,y);s.lineTo(x+w-r,y);s.quadraticCurveTo(x+w,y,x+w,y+r);
+s.lineTo(x+w,y+h-r);s.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
+s.lineTo(x+r,y+h);s.quadraticCurveTo(x,y+h,x,y+h-r);
+s.lineTo(x,y+r);s.quadraticCurveTo(x,y,x+r,y);return s;}
+function ext(shape,d,b){var g=new THREE.ExtrudeGeometry(shape,{depth:d,bevelEnabled:true,bevelThickness:b,bevelSize:b,bevelSegments:4,curveSegments:12});g.translate(0,0,-d/2);return g;}
+
+var caseM=new THREE.MeshStandardMaterial({color:'#1b2550',metalness:.9,roughness:.26});
+var strapM=new THREE.MeshStandardMaterial({color:'#2c3a7a',metalness:.05,roughness:.7});
+var darkM=new THREE.MeshStandardMaterial({color:'#070b1e',metalness:.3,roughness:.4});
+var watch=new THREE.Group();scene.add(watch);
+
+var body=new THREE.Mesh(ext(rr(1.7,2.0,.5),.3,.07),caseM);watch.add(body);
+var layers=[];function lay(m,dz){layers.push({m:m,z0:m.position.z,dz:dz});}
+var bzS=rr(1.7,2.0,.5);bzS.holes.push(rr(1.5,1.8,.4));
+var bezel=new THREE.Mesh(new THREE.ExtrudeGeometry(bzS,{depth:.03,bevelEnabled:false,curveSegments:12}),new THREE.MeshStandardMaterial({color:'#c9d2ff',metalness:1,roughness:.18}));
+bezel.position.z=.23;watch.add(bezel);lay(bezel,.7);
+var batt=new THREE.Mesh(new THREE.BoxGeometry(1.0,1.2,.1),new THREE.MeshStandardMaterial({color:'#3a4a9a',metalness:.4,roughness:.5}));batt.position.z=-.05;watch.add(batt);lay(batt,-1.0);
+var pcb=new THREE.Mesh(new THREE.BoxGeometry(1.2,1.5,.05),new THREE.MeshStandardMaterial({color:'#6a4fd8',metalness:.3,roughness:.5}));pcb.position.z=.05;watch.add(pcb);lay(pcb,-.6);
+
+function strap(sign){
+  var m=new THREE.Mesh(ext(rr(1.15,1.5,.25),.12,.03),strapM);
+  m.position.set(0,sign*1.55,-.2);m.rotation.x=-sign*.25;
+  if(sign<0){for(var i=0;i<5;i++){var h=new THREE.Mesh(new THREE.CircleGeometry(.045,16),darkM);h.position.set(0,-.4+i*.2,.095);m.add(h);}}else{for(var j=0;j<6;j++){var rd=new THREE.Mesh(new THREE.BoxGeometry(1.0,.035,.03),strapM);rd.position.set(0,-.55+j*.22,.1);m.add(rd);}}
+  watch.add(m);
+}
+strap(1);strap(-1);
+
+var hs=rr(1.9,2.2,.58);hs.holes.push(rr(1.8,2.1,.53));
+var halo=new THREE.Mesh(new THREE.ExtrudeGeometry(hs,{depth:.16,bevelEnabled:false,curveSegments:12}),new THREE.MeshBasicMaterial({color:0x6ee0ea,transparent:true,opacity:.35,depthWrite:false,toneMapped:false}));
+halo.position.z=-.08;watch.add(halo);
+var crownM=new THREE.MeshStandardMaterial({color:'#6ee0ea',metalness:.6,roughness:.3});
+var crown=new THREE.Mesh(new THREE.CylinderGeometry(.11,.11,.16,24),crownM);
+crown.rotation.z=Math.PI/2;crown.position.set(.97,.35,0);watch.add(crown);
+var btn=new THREE.Mesh(new THREE.BoxGeometry(.08,.5,.12),darkM);btn.position.set(.93,-.25,0);watch.add(btn);
+
+var back=new THREE.Mesh(new THREE.CylinderGeometry(.6,.6,.08,48),darkM);
+back.rotation.x=Math.PI/2;back.position.z=-.26;watch.add(back);lay(back,-1.4);
+[[-.2,.12,0x6ee0ea],[.2,.12,0x6ee0ea],[-.2,-.12,0xb79cff],[.2,-.12,0xb79cff]].forEach(function(p){
+  var led=new THREE.Mesh(new THREE.CircleGeometry(.07,24),new THREE.MeshBasicMaterial({color:p[2]}));
+  led.position.set(p[0],p[1],-.305);led.rotation.y=Math.PI;watch.add(led);lay(led,-1.45);
+});
+
+var cv=document.createElement('canvas');cv.width=512;cv.height=616;
+var cx=cv.getContext('2d');wrapCtx(cx);
+var tex=new THREE.CanvasTexture(cv);tex.encoding=THREE.sRGBEncoding;
+var screen=new THREE.Mesh(new THREE.PlaneGeometry(1.46,1.76),new THREE.MeshBasicMaterial({map:tex,transparent:true,toneMapped:false}));
+screen.position.z=.238;watch.add(screen);lay(screen,1.2);
+var glass=new THREE.Mesh(new THREE.ShapeGeometry(rr(1.5,1.8,.4)),new THREE.MeshStandardMaterial({color:'#ffffff',metalness:1,roughness:.05,transparent:true,opacity:.14,depthWrite:false}));glass.position.z=.245;watch.add(glass);lay(glass,1.7);
+
+function rrect(c,x,y,w,h,r){c.beginPath();c.moveTo(x+r,y);c.arcTo(x+w,y,x+w,y+h,r);c.arcTo(x+w,y+h,x,y+h,r);c.arcTo(x,y+h,x,y,r);c.arcTo(x,y,x+w,y,r);c.closePath();}
+var pts=[[0,0],[.28,0],[.33,-10],[.38,0],[.43,34],[.48,-40],[.53,0],[.6,0],[.68,-12],[.76,0],[1,0]];
+function ecg(p){p=p-Math.floor(p);for(var i=1;i<pts.length;i++){if(p<=pts[i][0]){var a=pts[i-1],b=pts[i];return a[1]+(b[1]-a[1])*(p-a[0])/(b[0]-a[0]);}}return 0;}
+
+// ===== État global =====
+var F='px Helvetica,Arial,sans-serif';
+var mode='calm',bpmV=68,valV=.82,tB=68,tV=.82;
+var scr='home',hits=[],breath=[4,6],vibOn=true,alertsOn=true,disc=false;
+var wkOn=false,wkName='',wkT0=0,etOn=false,etT0=0,suggest='',appOn=false,nowT=0;
+var THR=70,THR_BASE=70,HOLD=3,MVMAX=.3,COOL=2,B_HR=76,B_HRV=36,T=36;
+// Personnalisation : la personne simulée a un repos différent de la référence générique (68 bpm · 45 ms)
+var PER=[{n:'Matin',hr:-2,hrv:4},{n:'Après-midi',hr:2,hrv:0},{n:'Soir',hr:1,hrv:1},{n:'Nuit',hr:-8,hrv:8}];
+var PERSON={hr:76,hrv:36},ADJ_MAX=5,days=7;
+function perIdx(){var h=new Date().getHours();return h<6?3:h<12?0:h<18?1:h<22?2:3;}
+function kb(){return cl(days/7);}
+function kt(){return cl((days-2)/5);}
+function baseFor(i){var p=PER[i];return{hr:Math.round(68+(PERSON.hr-68)*kb()+p.hr*kt()),hrv:Math.round(45+(PERSON.hrv-45)*kb()+p.hrv*kt())};}
+function trueRest(){var p=PER[perIdx()];return{hr:PERSON.hr+p.hr,hrv:PERSON.hrv+p.hrv};}
+function updBase(){var b=baseFor(perIdx());B_HR=b.hr;B_HRV=b.hrv;THR=THR_BASE+Math.round(ADJ_MAX*kt());}
+updBase();
+var simState='idle',simOn=false,sT0=0,simK=0,baseZ=10,phase=-1;
+var rec=0,tAl=-1,above=0,scoreV=10,peak=0,lastS=0,lastPush=-1,lastMove=-99,hist=[],alertInfo=null,whyKey='',scen='stress';
+var ty=0,tx=0,by=0,bx=0,ex=0,exT=0,drag=false,lx=0,ly=0,pd=null;
+
+function bg(){cx.clearRect(0,0,512,616);cx.fillStyle='#050816';rrect(cx,0,0,512,616,100);cx.fill();}
+function ttl(s){cx.textAlign='center';cx.fillStyle='#f1f3ff';cx.font='bold 34'+F;cx.fillText(s,256,108);}
+function hit(x,y,w,h,f){hits.push({x:x,y:y,w:w,h:h,f:f});}
+function chip(x,y,w,h,label,on,f,size){cx.fillStyle=on?'#6ee0ea':'#1b2550';rrect(cx,x,y,w,h,h/2);cx.fill();cx.fillStyle=on?'#0f1a3a':'#f1f3ff';cx.font='bold '+(size||24)+F;cx.textAlign='center';cx.fillText(label,x+w/2,y+h/2+8);hit(x,y,w,h,f);}
+function backBtn(){chip(156,22,200,46,'‹ Menu',false,function(){scr='menu';},22);}
+var MENU=[{k:'resp',n:'Respiration',g:'◎',c:'#6ee0ea'},{k:'act',n:'Activités',g:'⚡',c:'#b79cff'},{k:'etir',n:'Étirements',g:'↕',c:'#6ee0ea'},{k:'som',n:'Sommeil',g:'☾',c:'#b79cff'},{k:'hist',n:'Historique',g:'▤',c:'#6ee0ea'},{k:'reg',n:'Réglages',g:'⚙',c:'#b79cff'}];
+var ACTS=[['Marche','10 min'],['Course','20 min'],['Yoga','15 min'],['Vélo','30 min']],ETN=['Cou','Épaules','Dos','Poignets'];
+function mmss(x){x=Math.max(0,Math.floor(x));return ('0'+Math.floor(x/60)).slice(-2)+':'+('0'+x%60).slice(-2);}
+function cl(x){return Math.max(0,Math.min(1,x));}
+
+function draw(t){
+  hits=[];
+  if(scr==='home'){drawHome(t);hit(0,0,512,616,function(){scr='menu';});cx.fillStyle='#a9b3dc';cx.font='18'+F;cx.textAlign='center';cx.fillText(suggest?'Conseillé : '+suggest+' · touchez':'Touchez pour le menu',256,40);wkOn=false;etOn=false;disc=false;}
+  else{if(scr!=='wk')wkOn=false;if(scr!=='etir')etOn=false;if(scr!=='resp')disc=false;bg();({menu:sMenu,resp:sResp,act:sAct,wk:sWk,etir:sEtir,som:sSom,hist:sHist,reg:sReg})[scr](t);}
+  tex.needsUpdate=true;
+}
+function bestOpt(){var b=null;['resp','relax','jeu'].forEach(function(k){if(fx[k].length&&(!b||fxAvg(k)>fxAvg(b)))b=k;});return b||'resp';}
+function fxHas(){return fx.resp.length+fx.relax.length+fx.jeu.length>0;}
+function sMenu(){cx.textAlign='center';cx.fillStyle='#f1f3ff';cx.font='bold 34'+F;cx.fillText('Menu',256,86);
+  MENU.forEach(function(m,i){var x=48+(i%2)*216,y=124+Math.floor(i/2)*138;cx.fillStyle='#1b2550';rrect(cx,x,y,200,124,28);cx.fill();
+    cx.fillStyle=m.c;cx.font='46'+F;cx.textAlign='center';cx.fillText(m.g,x+100,y+62);cx.fillStyle='#f1f3ff';cx.font='bold 22'+F;cx.fillText(m.n,x+100,y+102);hit(x,y,200,124,function(){scr=m.k;});
+    if(suggest&&m.k==='act'){cx.fillStyle='#b79cff';cx.beginPath();cx.arc(x+178,y+22,9,0,7);cx.fill();}});
+  var rk=bestOpt();cx.fillStyle='#3a2f8f';rrect(cx,56,540,400,56,28);cx.fill();cx.fillStyle='#f1f3ff';cx.font='bold 20'+F;cx.textAlign='center';cx.fillText((fxHas()?'Recommandé : ':'Pour commencer : ')+OPN[rk],256,574);
+  hit(56,540,400,56,function(){if(rk==='resp'){scr='resp';}else{appOn=true;$('bApp').setAttribute('aria-pressed','true');pst={relax:'relax',jeu:'jeux'}[rk];ses=null;pgm='';}});}
+function sResp(t){if(disc){discScr(t);return;}ttl('Respiration');backBtn();
+  var cyc=breath[0]+breath[1],q=t%cyc,inh=q<breath[0],k=inh?q/breath[0]:1-(q-breath[0])/breath[1],r=50+70*k;
+  cx.fillStyle='rgba(110,224,234,.22)';cx.beginPath();cx.arc(256,300,r+30,0,7);cx.fill();
+  cx.fillStyle='#6ee0ea';cx.beginPath();cx.arc(256,300,r,0,7);cx.fill();
+  cx.fillStyle='#0f1a3a';cx.font='bold 34'+F;cx.textAlign='center';cx.fillText(inh?'Inspirez':'Expirez',256,312);
+  chip(86,470,150,56,'4 · 6',breath[0]===4,function(){breath=[4,6];},26);chip(276,470,150,56,'5 · 5',breath[0]===5,function(){breath=[5,5];},26);
+  cx.fillStyle='#a9b3dc';cx.font='22'+F;cx.textAlign='center';cx.fillText('Rythme (secondes)',256,534);chip(146,546,220,50,'Mode discret',false,function(){disc=true;},22);}
+function discScr(t){var cyc=breath[0]+breath[1],q=t%cyc,inh=q<breath[0];cx.textAlign='center';cx.fillStyle='#a9b3dc';cx.font='24'+F;cx.fillText('Mode discret',256,250);cx.fillText('Suivez les vibrations',256,290);cx.fillStyle='#6ee0ea';cx.font='bold 40'+F;cx.fillText(inh?'Inspirez':'Expirez',256,380);chip(146,470,220,54,'Quitter',false,function(){disc=false;},22);}
+function sAct(){ttl('Activités');backBtn();
+  if(suggest){cx.fillStyle='#5b42c4';rrect(cx,56,130,400,64,28);cx.fill();cx.fillStyle='#fff';cx.font='bold 22'+F;cx.textAlign='center';cx.fillText('Conseillé : '+suggest,256,170);}
+  ACTS.forEach(function(a,i){var x=56+(i%2)*208,y=216+Math.floor(i/2)*112;cx.fillStyle='#1b2550';rrect(cx,x,y,192,100,28);cx.fill();cx.fillStyle='#f1f3ff';cx.font='bold 26'+F;cx.textAlign='center';cx.fillText(a[0],x+96,y+44);cx.fillStyle='#a9b3dc';cx.font='20'+F;cx.fillText(a[1],x+96,y+76);hit(x,y,192,100,function(){wkOn=true;wkName=a[0];wkT0=nowT;scr='wk';});});
+  cx.fillStyle='#a9b3dc';cx.font='19'+F;cx.textAlign='center';cx.fillText('Alertes de stress en pause pendant l’activité',256,480);}
+function sWk(){ttl(wkName);cx.textAlign='center';
+  cx.fillStyle='#f1f3ff';cx.font='bold 96'+F;cx.fillText(mmss(nowT-wkT0),256,300);
+  cx.fillStyle='#6ee0ea';cx.font='bold 40'+F;cx.fillText(Math.round(112+12*Math.sin(nowT*.5))+' bpm',256,370);
+  cx.fillStyle='#a9b3dc';cx.font='22'+F;cx.fillText('Zone modérée · détection en pause',256,412);
+  chip(156,450,200,60,'Terminer',true,function(){wkOn=false;scr='act';},26);}
+function sEtir(){ttl('Étirements');backBtn();cx.textAlign='center';
+  if(!etOn){cx.fillStyle='#a9b3dc';cx.font='24'+F;cx.fillText('Pause active · 1 minute',256,200);cx.fillText('4 étapes de 15 secondes',256,240);chip(136,300,240,64,'Démarrer',true,function(){etOn=true;etT0=nowT;},28);return;}
+  var e=nowT-etT0,st=Math.floor(e/15);
+  if(st>=4){cx.fillStyle='#6ee0ea';cx.font='bold 36'+F;cx.fillText('Terminé',256,280);chip(136,330,240,64,'Recommencer',true,function(){etT0=nowT;},26);return;}
+  cx.fillStyle='#a9b3dc';cx.font='22'+F;cx.fillText('Étape '+(st+1)+' / 4',256,180);
+  cx.fillStyle='#f1f3ff';cx.font='bold 56'+F;cx.fillText(ETN[st],256,290);
+  cx.fillStyle='#1b2550';rrect(cx,96,350,320,18,9);cx.fill();cx.fillStyle='#6ee0ea';rrect(cx,96,350,Math.max(18,320*((e%15)/15)),18,9);cx.fill();
+  cx.fillStyle='#a9b3dc';cx.font='22'+F;cx.fillText((15-Math.floor(e%15))+' s',256,410);}
+function sSom(){ttl('Sommeil');backBtn();cx.textAlign='center';cx.fillStyle='#f1f3ff';cx.font='bold 72'+F;cx.fillText('7 h 20',256,260);
+  cx.fillStyle='#a9b3dc';cx.font='22'+F;cx.fillText('Nuit dernière · exemple',256,300);
+  cx.fillStyle='#1b2550';rrect(cx,96,340,320,22,11);cx.fill();cx.fillStyle='#b79cff';rrect(cx,96,340,250,22,11);cx.fill();
+  cx.fillStyle='#f1f3ff';cx.font='24'+F;cx.fillText('Récupération 78 %',256,400);cx.fillStyle='#a9b3dc';cx.font='20'+F;cx.fillText('Un bon sommeil aide à mieux gérer le stress.',256,470);}
+function sHist(){ttl('Cette semaine');backBtn();
+  var v=[35,48,62,41,55,72,38],d=['L','M','M','J','V','S','D'];
+  v.forEach(function(x,i){var bx2=64+i*58,bh=x*3.2;cx.fillStyle=x>=THR?'#b79cff':'#6ee0ea';rrect(cx,bx2,480-bh,40,bh,10);cx.fill();cx.fillStyle='#a9b3dc';cx.font='22'+F;cx.textAlign='center';cx.fillText(d[i],bx2+20,515);});
+  cx.fillText('Stress moyen par jour · exemple',256,566);}
+function tog(y,label,on,f){cx.fillStyle='#f1f3ff';cx.font='26'+F;cx.textAlign='left';cx.fillText(label,70,y+34);cx.fillStyle=on?'#6ee0ea':'#1b2550';rrect(cx,350,y,92,50,25);cx.fill();cx.fillStyle='#fff';cx.beginPath();cx.arc(on?417:375,y+25,19,0,7);cx.fill();hit(60,y,390,50,f);}
+function sReg(){ttl('Réglages');backBtn();
+  tog(140,'Vibration',vibOn,function(){vibOn=!vibOn;});tog(214,'Alertes stress',alertsOn,function(){alertsOn=!alertsOn;});
+  cx.fillStyle='#a9b3dc';cx.font='22'+F;cx.textAlign='left';cx.fillText('Sensibilité',70,330);
+  var si=THR_BASE===80?0:THR_BASE===70?1:THR_BASE===60?2:-1;
+  [['Basse',80],['Moyenne',70],['Haute',60]].forEach(function(a,i){chip(56+i*136,348,128,52,a[0],si===i,function(){setThr(a[1]);},22);});
+  cx.textAlign='center';cx.fillStyle='#a9b3dc';cx.fillText('Seuil d’alerte : '+THR+' / 100',256,450);}
+function drawHome(t){
+  var stress=mode==='stress',c1=stress?'#b79cff':'#6ee0ea';
+  cx.clearRect(0,0,512,616);
+  cx.fillStyle='#050816';rrect(cx,0,0,512,616,100);cx.fill();
+  cx.textAlign='center';cx.fillStyle='#f1f3ff';cx.font='bold 54'+F;
+  cx.fillText(hhmm(),256,100);
+  var val=valV,pulse=stress?Math.sin(t*5)*6:0;
+  cx.lineWidth=18;cx.lineCap='round';
+  cx.strokeStyle='#1b2550';cx.beginPath();cx.arc(256,270,120,0,TAU);cx.stroke();
+  cx.strokeStyle=c1;cx.lineWidth=18+pulse*.6;cx.beginPath();cx.arc(256,270,120,-Math.PI/2,-Math.PI/2+TAU*val);cx.stroke();
+  cx.fillStyle='#f1f3ff';cx.font='bold 84'+F;cx.fillText(String(Math.round(valV*100)),256,296);
+  cx.fillStyle='#a9b3dc';cx.font='24'+F;cx.fillText(KIND[kindOf()].home,256,334);
+  if(stress){cx.fillStyle='#b79cff';rrect(cx,86,396,340,52,26);cx.fill();cx.fillStyle='#0f1a3a';cx.font='bold 26'+F;cx.fillText(KIND[kindOf()].cta,256,432);}
+  else{cx.fillStyle='#6ee0ea';cx.font='28'+F;cx.fillText('Tout va bien',256,430);}
+  cx.strokeStyle=c1;cx.lineWidth=5;cx.lineJoin='round';cx.beginPath();
+  var cyc=stress?2.6:1.6,sp=stress?1.8:.9;
+  for(var x=50;x<=462;x+=3){var y=510-ecg((x-50)/412*cyc-t*sp)*.9;if(x===50)cx.moveTo(x,y);else cx.lineTo(x,y);}
+  cx.stroke();
+  cx.fillStyle='#a9b3dc';cx.font='24'+F;cx.fillText(Math.round(bpmV)+' bpm',256,578);
+  (function(){var q=Math.min(1,rwToday()/3);cx.lineCap='round';cx.lineWidth=7;cx.strokeStyle='#1b2550';cx.beginPath();cx.arc(436,84,22,0,TAU);cx.stroke();
+    if(q>0){cx.strokeStyle=q>=1?'#4fd1a1':'#b79cff';cx.beginPath();cx.arc(436,84,22,-Math.PI/2,-Math.PI/2+TAU*q);cx.stroke();}
+    cx.fillStyle='#f1f3ff';cx.font='bold 20'+F;cx.textAlign='center';cx.fillText(String(Math.min(rwToday(),9)),436,91);})();
+}
+function hhmm(){return new Date().toLocaleTimeString(LANG==='fr'?'fr-FR':LANG==='en'?'en-GB':'ar-u-nu-latn',{hour:'2-digit',minute:'2-digit',hour12:false});}
+
+// ===== Groupes de boutons =====
+function seg(id,items,onPick,start){
+  var g=$(id),btns=[];
+  items.forEach(function(it,i){
+    var b=document.createElement('button');b.type='button';
+    b.innerHTML=(it.c?'<span class="dot" style="background:'+it.c+'"></span>':'')+it.n;
+    b.addEventListener('click',function(){set(i);onPick(it,i);});
+    g.appendChild(b);btns.push(b);
+  });
+  function set(i){btns.forEach(function(x,j){x.setAttribute('aria-pressed',j===i?'true':'false');});}
+  set(start);return{set:set,btns:btns};
+}
+var cap=$('cap'),capFr='';function say(s){capFr=s;cap.textContent=tr(s);}
+say('Faites glisser pour tourner. Touchez l’écran ou la couronne.');
+seg('gc',[{n:'Nuit',c:'#1b2550',s:'#2c3a7a'},{n:'Violet',c:'#5b42c4',s:'#7a63e0'},{n:'Aurore',c:'#2fb5c4',s:'#6ee0ea'}],function(f){caseM.color.set(f.c);strapM.color.set(f.s);},0);
+seg('gs',[{n:'Au calme'},{n:'Stress détecté'}],function(it){if(simOn)stopSim();mode=it.n==='Au calme'?'calm':'stress';tB=mode==='calm'?68:104;tV=mode==='calm'?.82:.34;},0);
+var viewSeg=seg('gv',[{n:'Face'},{n:'Dos'},{n:'Éclatée'}],function(it){
+  if(simOn)stopSim();tx=0;exT=0;
+  if(it.n==='Éclatée'){ty=-1.0;tx=.15;exT=1;say('Vue éclatée des 7 composants.');return;}
+  if(it.n==='Face'){ty=Math.round(ty/TAU)*TAU;say('Face : calme, rythme cardiaque, alerte.');}
+  else{ty=Math.round((ty-Math.PI)/TAU)*TAU+Math.PI;say('Dos : capteur optique (4 LED).');}
+},0);
+viewSeg.btns.forEach(function(b){b.className='';});
+
+// ===== Annotations de la vue éclatée =====
+var co=$('co'),NS='http://www.w3.org/2000/svg',vec=new THREE.Vector3();
+var parts=[[glass,'Verre'],[screen,'Écran tactile'],[bezel,'Cadre'],[body,'Boîtier'],[pcb,'Carte électronique'],[batt,'Batterie'],[back,'Capteur optique']].map(function(a){
+  var l=document.createElementNS(NS,'line'),c=document.createElementNS(NS,'circle'),t=document.createElementNS(NS,'text');
+  c.setAttribute('r','3.5');t.setAttribute('text-anchor','end');t.textContent=a[1];co.appendChild(l);co.appendChild(c);co.appendChild(t);
+  return{o:a[0],l:l,c:c,t:t};
+});
+function callouts(){
+  var w=root.clientWidth,h=root.clientHeight,show=ex>.15&&simK<.05;
+  co.style.opacity=show?String(Math.min(1,(ex-.15)*1.6)):'0';if(!show)return;
+  var arr=parts.map(function(p){p.o.getWorldPosition(vec);vec.project(cam);return{p:p,x:(vec.x*.5+.5)*w,y:(-vec.y*.5+.5)*h};});
+  arr.sort(function(a,b){return a.y-b.y;});
+  var top=h*.18,step=(h*.6)/(arr.length-1),labW=Math.min(128,w*.3),lx=w-12;
+  arr.forEach(function(it,i){var ly=top+i*step,p=it.p;
+    p.l.setAttribute('x1',it.x);p.l.setAttribute('y1',it.y);p.l.setAttribute('x2',lx-labW-6);p.l.setAttribute('y2',ly-4);
+    p.c.setAttribute('cx',it.x);p.c.setAttribute('cy',it.y);p.t.setAttribute('x',lx);p.t.setAttribute('y',ly);});
+}
+
+// ===== Simulation : scénarios =====
+var SC={
+ stress:{n:'Stress aigu',ex:1,d:'FC en hausse, VFC en baisse au repos. Alerte attendue.',f:function(s){
+   if(s<2.5)return{dh:0,dv:0};
+   if(s<5)return{dh:36,dv:17,mv:.7+Math.sin(s*23)*.15};
+   if(s<7)return{dh:0,dv:0};
+   var k=cl((s-7)/3);return{dh:40*k,dv:23*k};}},
+ effort:{n:'Effort physique',ex:0,d:'FC élevée par une course. Pas d’alerte : mouvement détecté.',f:function(s){
+   var k=cl((s-2)/5),k2=cl((s-24)/4),l=k*(1-k2);
+   return{dh:55*l,dv:24*l,mv:(s>=2.5&&s<24)?.85+Math.sin(s*19)*.2:undefined};}},
+ soudain:{n:'Pic soudain',ex:1,d:'Hausse brutale sans mouvement. Alerte rapide.',f:function(s){var k=cl((s-3.5)/1.2);return{dh:44*k,dv:26*k};}},
+ leger:{n:'Tension légère',ex:0,d:'Légère hausse de la FC, sous le seuil : pas d’alerte. Sans apprentissage (0 jour), fausse alerte.',f:function(s){var k=cl((s-5)/4);return{dh:22*k,dv:12*k};}},
+ fatigue:{n:'Fatigue',kind:'fatigue',ex:1,d:'VFC basse, FC un peu haute sans effort : pause ou sieste proposée.',f:function(s){var k=cl((s-3)/6);return{dh:14*k,dv:28*k};}},
+ sedentary:{n:'Sédentarité',kind:'sedentary',ex:1,d:'Longue immobilité : pause active proposée (1 s ≈ 8 min).',f:function(){return{dh:0,dv:0,mv:.02};}}
+};
+var scKeys=Object.keys(SC);
+var KIND={
+ stress:{score:'Score de stress',lvl:'Niveau de stress',home:'niveau de calme',cta:'Respirons ensemble',title:'Stress inhabituel détecté',line:function(){return Math.round(bpmV)+' bpm, sans activité physique';},msg:'Vous semblez stressé',conf:'stress confirmé',why:'stress probable au repos',
+  opts:[['resp','Respiration','Guidée · 1 minute'],['relax','Relaxation','Détente musculaire guidée'],['jeux','Mini-jeux','Se changer les idées'],['ia','Assistant IA','Parler de ce que je ressens'],['psy','Psychologue','Partenaire · confidentiel']]},
+ fatigue:{score:'Score de fatigue',lvl:'Niveau de fatigue',home:'niveau d’énergie',cta:'Faisons une pause',title:'Fatigue détectée',line:function(){return 'Énergie en baisse';},msg:'Vous semblez fatigué',conf:'fatigue confirmée',why:'VFC basse et FC un peu élevée sans effort, donc récupération insuffisante',
+  opts:[['som','Sommeil','Sieste de 20 min conseillée'],['resp','Respiration','Guidée · 1 minute'],['relax','Relaxation','Détente musculaire guidée'],['ia','Assistant IA','Parler de ma fatigue'],['psy','Psychologue','Partenaire · confidentiel']]},
+ sedentary:{score:'Score de sédentarité',lvl:'Niveau d’inactivité',home:'niveau d’activité',cta:'Bougeons un peu',title:'Inactivité prolongée',line:function(){return 'Immobile depuis longtemps';},msg:'Il est temps de bouger',conf:'inactivité prolongée confirmée',why:'',
+  opts:[['act','Activités','Marche 10 min conseillée'],['etir','Étirements','Pause active · 1 minute'],['bien','Bien-être','Voir mon activité du jour'],['jeux','Mini-jeux','Un défi pour se dégourdir']]}
+};
+function kindOf(){return SC[scen].kind||'stress';}
+function kA(){return KIND[alertInfo?alertInfo.kind:kindOf()];}
+function isNight(){var h=new Date().getHours();return h>=21||h<6;}
+function applyKind(){$('heroL').textContent=tr(KIND[kindOf()].score);}
+seg('gsc',scKeys.map(function(k){return{n:SC[k].n};}),function(it,i){scen=scKeys[i];$('scd').textContent=tr(SC[scen].d);applyKind();if(simOn)startSim();},0);
+$('scd').textContent=tr(SC[scen].d);
+function sig(s){
+  var n1=Math.sin(s*7.3)*1.2+Math.sin(s*17.1)*.8,n2=Math.sin(s*5.1)*2+Math.sin(s*11.7),mv=.04+Math.abs(Math.sin(s*9))*.02;
+  var f=SC[scen].f(s),hr=trueRest().hr+f.dh+n1,hrv=trueRest().hrv-f.dv+n2;if(f.mv!==undefined)mv=f.mv;
+  if(tAl>=0){var r=cl((s-tAl-4.5)/8);hr-=f.dh*.85*r;hrv+=f.dv*.7*r;}
+  return{hr:hr,hrv:hrv,mv:mv};
+}
+var STEPS=['Collecte','Analyse','Alerte','Application','Accompagnement','Suivi'],stepEls=[];
+var recBtn=$('recBtn'),noRecBtn=$('noRecBtn');
+var stEl=$('steps'),stat=$('stat'),simBtn=$('simBtn'),kvEls={},expBtn=$('exp');
+var statFr='Choisissez un scénario.',pillFr='En veille',pillK='',simBtnFr='Lancer la simulation',kvFr={};
+var scG=10,aboveG=0,genAlert=false,genPeak=0,cmpKey='',profRows=[],clS=10,clAbove=0,clAlert=false,clPeak=0,conf=100,trend=0,shield=0;
+function setStat(f){statFr=f;stat.textContent=tr(f);}
+function setKv(k,f){kvFr[k]=f;kvEls[k].textContent=tr(f);}
+function setSimBtn(f){simBtnFr=f;simBtn.textContent=tr(f);}
+(function(){var tb=document.querySelector('#prof tbody');PER.forEach(function(p){var rw=document.createElement('tr');rw.innerHTML='<td>'+p.n+'</td><td></td><td></td>';tb.appendChild(rw);profRows.push(rw);});})();
+function updProfile(){PER.forEach(function(p,i){var b=baseFor(i),r=profRows[i],cur=i===perIdx();r.cells[1].textContent=b.hr+' bpm';r.cells[2].textContent=b.hrv+' ms';r.style.fontWeight=cur?'700':'400';r.style.color=cur?'var(--acc)':'';});}
+function renderAdapt(){$('adapt').textContent=tr('Référence personnalisée à '+Math.round(kb()*100)+' % · seuil effectif '+THR+' (base '+THR_BASE+' + adaptation '+(THR-THR_BASE)+')');}
+function renderCmp(force){
+  var el=$('cmp');
+  if(simState==='idle'||kindOf()==='sedentary'){el.hidden=true;cmpKey='';return;}
+  var gA=genAlert,pA=!!alertInfo,cA=clAlert,ok=!!SC[scen].ex,key=[simState,Math.round(clPeak),cA,Math.round(genPeak),gA,Math.round(peak),pA,Math.round(shield*2),LANG,B_HR,B_HRV].join('|');
+  if(!force&&key===cmpKey)return;cmpKey=key;el.hidden=false;
+  var rows=[['Montre classique',clPeak,cA],['Calmora sans apprentissage',genPeak,gA],['Calmora personnalisée',peak,pA]];
+  var h='<h3>'+tr('Calmora face à une montre classique')+'</h3><p class="hint" style="margin-top:0">'+tr('Classique : seuil fixe, sans filtre de mouvement.')+'</p><table>';
+  rows.forEach(function(r,i){var res=r[2]?tr('alerte'):tr('pas d’alerte');if(simState==='done')res+=(r[2]===ok?' ✓':' ✗');h+='<tr'+(i===2?' style="font-weight:700"':'')+'><td>'+tr(r[0])+'</td><td>'+Math.round(r[1])+' / 100</td><td>'+res+'</td></tr>';});
+  h+='</table>';
+  if(shield>=.1)h+='<p class="hint">'+tr('Fausses alertes écartées par le filtre : '+shield.toFixed(1)+' s')+'</p>';
+  if(simState==='done'){var eC=cA!==ok,eP=pA!==ok;h+='<p><b>'+tr(eC&&!eP?'Calmora évite l’erreur de la montre classique.':(!eC&&eP?'La montre classique fait mieux ici.':'Même résultat que la montre classique.'))+'</b></p>';
+    if(gA!==pA)h+='<p>'+tr(gA&&!pA?'La personnalisation évite une fausse alerte.':'La personnalisation détecte un stress que la référence générique aurait manqué.')+'</p>';}
+  el.innerHTML=h;
+}
+STEPS.forEach(function(n){var e=document.createElement('li');e.className='st';e.textContent=n;stEl.appendChild(e);stepEls.push(e);});
+[['hr','Fréquence cardiaque'],['hrv','VFC (RMSSD)'],['mv','Mouvement'],['pe','Persistance au-dessus du seuil'],['cf','Fiabilité du signal'],['tr','Tendance']].forEach(function(a){var d=document.createElement('div');d.className='k';d.innerHTML='<span>'+a[1]+'</span><b>—</b>';$('kv').appendChild(d);kvEls[a[0]]=d.lastChild;});
+function recommend(k){k=k||kindOf();if(k==='fatigue')return isNight()?'Coucher plus tôt':'Pause 10 min';if(k==='sedentary')return 'Marche 10 min';return isNight()?'Étirements 1 min':'Marche 10 min';}
+function setPhase(p){if(p===phase)return;phase=p;
+  if(p===2)scr='home';if(p===3)pst='auto';
+  if(p===4){scr='resp';disc=true;}
+  if(p===5){disc=false;scr='home';pst='auto';suggest=alertInfo?alertInfo.rec:recommend();}
+  stepEls.forEach(function(e,i){e.className='st'+(i<p?' done':'')+(i===p?' on':'');});}
+function setThr(v){THR_BASE=v;updBase();$('rThr').value=v;$('oThr').textContent=v;renderAdapt();}
+$('rDays').addEventListener('input',function(){days=+this.value;$('oDays').textContent=tr(days+' j');updBase();updProfile();renderAdapt();});
+$('rThr').addEventListener('input',function(){setThr(+this.value);});
+$('rHold').addEventListener('input',function(){HOLD=+this.value;$('oHold').textContent=HOLD.toFixed(1).replace('.',',')+' s';});
+$('rMv').addEventListener('input',function(){MVMAX=+this.value;$('oMv').textContent=MVMAX.toFixed(2).replace('.',',')+' g';});
+function setPill(t,k){pillFr=t;pillK=k;var p=$('pill');p.textContent=tr(t);p.setAttribute('data-k',k);}
+function startSim(){
+  applyKind();scG=10;aboveG=0;genAlert=false;genPeak=0;clS=10;clAbove=0;clAlert=false;clPeak=0;conf=100;trend=0;shield=0;preAt=-1;notifDone=false;setNotif(false);simOn=true;simState='run';sT0=nowT;phase=-1;rec=0;tAl=-1;above=0;scoreV=10;peak=0;lastS=0;lastPush=-1;lastMove=-99;hist=[];alertInfo=null;whyKey='';suggest='';pst='auto';
+  wkOn=false;scr='home';disc=false;
+  setSimBtn('Arrêter la simulation');simBtn.setAttribute('aria-pressed','true');
+  mode='calm';tB=68;tV=.82;ty=Math.round(ty/TAU)*TAU+.35;tx=0;exT=0;viewSeg.set(0);
+  say('Simulation : '+SC[scen].n);
+  $('tabD').click();
+}
+function stopSim(){setNotif(false);
+  recBtn.hidden=true;noRecBtn.hidden=true;applyKind();simOn=false;simState='idle';pst='home';phase=-1;rec=0;tAl=-1;above=0;hist=[];alertInfo=null;whyKey='';
+  stepEls.forEach(function(e){e.className='st';});
+  setSimBtn('Lancer la simulation');simBtn.setAttribute('aria-pressed','false');
+  mode='calm';tB=68;tV=.82;ty=Math.round(ty/TAU)*TAU;
+  setStat('Choisissez un scénario.');
+  ['hr','hrv','mv','pe','cf','tr'].forEach(function(k){setKv(k,'—');});
+  $('score').innerHTML='10<span> / 100</span>';setPill('En veille','');expBtn.disabled=true;renderWhy();renderCmp();drawChart(0);
+}
+function finishSim(){setNotif(false);
+  simOn=false;simState='done';pst='home';mode='calm';tB=68;tV=.82;
+  setSimBtn('Relancer la simulation');simBtn.setAttribute('aria-pressed','false');
+  setStat(alertInfo?(rec===1?'Terminé : alerte émise et suivie.':'Terminé : alerte émise, séance non enregistrée.'):'Terminé : aucune alerte, comme attendu.');
+  setPill(alertInfo?(rec===1?'Séance enregistrée':'Alerte émise'):'Aucune alerte',alertInfo?'':'ok');recBtn.hidden=true;noRecBtn.hidden=true;
+  say('Séance terminée. Exportez ou changez de scénario.');renderWhy();renderCmp();drawChart(T);
+}
+simBtn.addEventListener('click',function(){if(simOn)stopSim();else startSim();});
+function choose(v){if(simOn&&tAl>=0&&rec===0){rec=v;if(v===1)rwLast=rwAward('rec',0,15);}}
+var nEl=$('notif'),nKey='',notifDone=false,NL={stress:'Stress détecté',fatigue:'Fatigue détectée',sedentary:'Inactivité détectée'};
+function setNotif(show,kd){var key=show?kd+'|'+LANG:'';if(key===nKey)return;nKey=key;if(show)$('nMsg').textContent=tr(NL[kd]||NL.stress);nEl.classList.toggle('on',!!show);}
+nEl.addEventListener('click',function(){notifDone=true;setNotif(false);$('bFull').click();});
+recBtn.addEventListener('click',function(){choose(1);});noRecBtn.addEventListener('click',function(){choose(-1);});
+
+function simStep(s){
+  if(s>=T){finishSim();return;}
+  var dt=Math.max(0,Math.min(.1,s-lastS));lastS=s;
+  var g=sig(s);
+  if(g.mv>MVMAX)lastMove=s;
+  var cooling=!wkOn&&g.mv<=MVMAX&&(s-lastMove)<COOL,valid=g.mv<=MVMAX&&!wkOn&&!cooling;
+  var kd=kindOf(),pHR,pHRV,tgt;
+  if(kd==='fatigue'){pHR=.25*cl((g.hr-B_HR)/20);pHRV=.75*cl((B_HRV-g.hrv)/30);tgt=100*(pHR+pHRV);}
+  else if(kd==='sedentary'){pHR=0;pHRV=0;tgt=tAl<0?100*cl((s-2)/12):100*cl(1-(s-tAl-4)/6);}
+  else{pHR=.5*cl((g.hr-B_HR)/40);pHRV=.5*cl((B_HRV-g.hrv)/25);tgt=100*(pHR+pHRV);}
+  if(kd!=='sedentary'){var cT=100*(.5*cl((g.hr-68)/40)+.5*cl((45-g.hrv)/25));clS+=(cT-clS)*(1-Math.exp(-dt*8));clPeak=Math.max(clPeak,clS);if(!clAlert){clAbove=clS>=70?clAbove+dt:0;if(clAbove>=1)clAlert=true;}}
+  if(!valid&&tgt>=THR)shield+=dt;
+  conf+=((valid?100:35)-conf)*(1-Math.exp(-dt*2));
+  if(valid)scoreV+=(tgt-scoreV)*(1-Math.exp(-dt*8));
+  if(kd!=='sedentary'&&valid){
+    var gH=kd==='fatigue'?.25*cl((g.hr-68)/20)+.75*cl((45-g.hrv)/30):.5*cl((g.hr-68)/40)+.5*cl((45-g.hrv)/25);
+    scG+=(100*gH-scG)*(1-Math.exp(-dt*8));genPeak=Math.max(genPeak,scG);
+    if(!genAlert){aboveG=scG>=THR_BASE?aboveG+dt:0;if(aboveG>=HOLD)genAlert=true;}
+  }
+  peak=Math.max(peak,scoreV);
+  if(tAl<0){
+    if(valid)above=scoreV>=THR?above+dt:0;
+    if(above>=HOLD&&alertsOn){
+      tAl=s;var sum=Math.max(.001,pHR+pHRV);
+      alertInfo={hr:g.hr,hrv:g.hrv,mv:g.mv,sc:scoreV,thr:THR,hold:above,mvmax:MVMAX,shr:Math.round(100*pHR/sum),shrv:Math.round(100*pHRV/sum),bhr:B_HR,bhrv:B_HRV,rec:recommend(kd),kind:kd,night:isNight(),min:Math.round(s*8)};
+      if(vibOn&&navigator.vibrate){try{navigator.vibrate([180,80,180]);}catch(e){}}
+    }
+  }
+  var ph;
+  if(tAl<0)ph=s<2.5?0:1;else if(s<tAl+1.5)ph=2;else if(s<tAl+4)ph=3;else if(rec===0)ph=4;else ph=5;
+  setPhase(ph);
+  mode=(ph>=2&&ph<5)?'stress':'calm';tB=g.hr;tV=(100-scoreV)/100;
+  var h0=null,badW=false;for(var hi=hist.length-1;hi>=0;hi--){if(s-hist[hi][0]>=1.5){h0=hist[hi];break;}if(!hist[hi][3])badW=true;}
+  trend=h0?(scoreV-h0[1])/(s-h0[0]):0;
+  var pre=tAl<0&&valid&&kd!=='sedentary'&&scoreV<THR&&!badW&&scoreV>=THR*.4&&trend>=3,eta=pre?Math.max(1,Math.round((THR-scoreV)/trend)):0;
+  if(pre&&preAt<0)preAt=s;
+  var msg;
+  if(ph===0)msg='Étalonnage : mesure de la référence au repos ('+B_HR+' bpm, VFC '+B_HRV+' ms).';
+  else if(ph===1)msg=!valid?(wkOn?'Activité en cours : détection du stress en pause.':g.mv>MVMAX?'Mouvement détecté : mesure ignorée.':'Récupération après mouvement : mesure ignorée.'):(scoreV>=THR?'Seuil dépassé : confirmation en cours ('+above.toFixed(1)+' s sur '+HOLD.toFixed(1)+' s).':(pre?'Tendance à la hausse : seuil dans ~'+eta+' s.':'Surveillance : score '+Math.round(scoreV)+' / 100, sous le seuil de '+THR+'.'));
+  else if(ph===2)msg='Alerte : '+KIND[kd].conf+', la montre vibre.';
+  else if(ph===3)msg='Alerte envoyée à l’application (Bluetooth).';
+  else if(ph===4)msg='Application ouverte : choisissez une option.';
+  else msg=rec===1?'Séance enregistrée · alertes en pause 30 min.':'Séance non enregistrée · alertes en pause 30 min.';
+  recBtn.hidden=noRecBtn.hidden=!(ph===4);
+  setNotif(!notifDone&&(ph===3||ph===4)&&rec===0&&!fsOn,kd);
+  setStat(msg);
+  if(s-lastPush>=.1){lastPush=s;hist.push([s,scoreV,g.hr,valid,g.hrv,g.mv,kd==='sedentary'?null:clS]);}
+  var stt=ph>=5?'Pause 30 min':ph>=2?'Alerte émise':!valid?'Mesure ignorée':scoreV>=THR?'Seuil dépassé':pre?'Pré-alerte':'Surveillance';
+  setKv('hr',Math.round(g.hr)+' bpm (réf. '+B_HR+')');
+  setKv('hrv',Math.round(g.hrv)+' ms (réf. '+B_HRV+')');
+  setKv('mv',kd==='sedentary'?'Immobile depuis ~'+Math.round((tAl>=0?Math.min(s,tAl+4):s)*8)+' min':g.mv.toFixed(2)+' g · '+(g.mv>MVMAX?'mouvement':wkOn?'activité':cooling?'récupération':'repos'));
+  setKv('pe',above.toFixed(1)+' s / '+HOLD.toFixed(1)+' s');
+  setKv('cf',Math.round(conf)+' %');setKv('tr',Math.abs(trend)<1?'stable':(trend>0?'+':'−')+Math.round(Math.abs(trend))+' pts/s');
+  $('score').innerHTML=Math.round(scoreV)+'<span> / 100</span>';
+  setPill(stt,ph>=2?'warn':(scoreV>=THR||pre?'warn':(valid?'ok':'')));
+  expBtn.disabled=!hist.length;
+  renderWhy();renderCmp();drawChart(s);
+}
+function renderWhy(){
+  var key=LANG+'|'+simState+'|'+(alertInfo?1:0)+'|'+(simState==='done'?Math.round(peak):0);
+  if(key===whyKey)return;whyKey=key;var h,a=alertInfo,W=WT[LANG];
+  if(a){
+    var K2=KIND[a.kind],why;
+    if(a.kind==='sedentary')why=fmt(W.sed,a.min,a.thr,a.hold.toFixed(1));
+    else why=fmt(W.phy,a.thr,a.hold.toFixed(1),a.mv.toFixed(2),a.mvmax.toFixed(2),tr(K2.why))
+      +'<div class="bar">'+fmt(W.hr,(a.hr>=a.bhr?'+':'')+Math.round(a.hr-a.bhr),a.shr)+'<i style="--w:'+a.shr+'%"></i></div>'
+      +'<div class="bar">'+fmt(W.hrv,Math.round(a.hrv-a.bhrv),a.shrv)+'<i style="--w:'+a.shrv+'%"></i></div>';
+    h='<h3>'+W.ttl+'</h3>'+why+fmt(W.rec,tr(a.rec),a.night?W.night:W.day);
+  }else if(simState==='idle')h='<h3>'+W.idleT+'</h3>'+W.idle;
+  else if(simState==='run')h='<h3>'+W.idleT+'</h3>'+W.run;
+  else{
+    var bad=hist.filter(function(p){return !p[3];}).length,pct=hist.length?Math.round(100*bad/hist.length):0;
+    h='<h3>'+W.noT+'</h3><p>'+(peak<THR?fmt(W.noA,Math.round(peak),THR):(pct<10?fmt(W.noC,HOLD.toFixed(1)):fmt(W.noB,pct)))+'</p>';
+  }
+  $('why').innerHTML=h;
+}
+var chartEl=$('chart'),cctx=chartEl.getContext('2d'),dpr=Math.min(window.devicePixelRatio||1,2);
+wrapCtx(cctx);
+var showCl=true,showHR=false,preAt=-1;
+['tCl','tHr'].forEach(function(id){$(id).addEventListener('click',function(){var on=this.getAttribute('aria-pressed')!=='true';this.setAttribute('aria-pressed',on?'true':'false');if(id==='tCl')showCl=on;else showHR=on;drawChart(simState==='run'?lastS:T);});});
+function drawChart(s){
+  var w=chartEl.clientWidth,h=chartEl.clientHeight;if(!w||!h)return;
+  if(chartEl.width!==Math.round(w*dpr)){chartEl.width=Math.round(w*dpr);chartEl.height=Math.round(h*dpr);}
+  var c=cctx;c.setTransform(dpr,0,0,dpr,0,0);c.clearRect(0,0,w,h);
+  var cs=getComputedStyle(document.documentElement),fg=cs.getPropertyValue('--fg').trim(),mut=cs.getPropertyValue('--mut').trim(),acc=cs.getPropertyValue('--acc').trim(),acc2=cs.getPropertyValue('--acc2').trim(),warn=cs.getPropertyValue('--warn').trim();
+  var L=36,R=14,Tp=26,Bt=26,H=h-Tp-Bt,hl=hist.length,i,p;
+  function X(t){return L+(Math.min(t,T)/T)*(w-L-R);}
+  function Y(v){return Tp+(1-v/100)*H;}
+  // zone d'alerte (au-dessus du seuil)
+  c.fillStyle='rgba(255,107,122,.11)';c.fillRect(L,Y(100),w-L-R,Y(THR)-Y(100));
+  // grille et axes
+  c.font='11px system-ui,sans-serif';c.lineWidth=1;c.strokeStyle='rgba(150,165,230,.16)';c.fillStyle=mut;c.textAlign='right';
+  [0,25,50,75,100].forEach(function(v){c.beginPath();c.moveTo(L,Y(v));c.lineTo(w-R,Y(v));c.stroke();c.fillText(String(v),L-6,Y(v)+4);});
+  c.textAlign='center';[0,6,12,18,24,30,36].forEach(function(t){c.fillText(t+' s',Math.min(w-R-8,Math.max(L+8,X(t))),h-8);});
+  // suivi après l'alerte
+  if(tAl>=0){c.fillStyle='rgba(154,139,255,.10)';c.fillRect(X(tAl),Tp,w-R-X(tAl),H);}
+  // mesures ignorées (mouvement)
+  var a0=null,lab=null;c.fillStyle='rgba(150,150,170,.24)';
+  hist.forEach(function(q,k){if(!q[3]&&a0===null)a0=q[0];if((q[3]||k===hl-1)&&a0!==null){var x0=X(a0),ww=Math.max(1,X(q[0])-x0);c.fillRect(x0,Tp,ww,H);if(!lab)lab=[x0,ww];a0=null;}});
+  c.font='10.5px system-ui,sans-serif';c.textAlign='center';c.fillStyle=mut;
+  if(lab&&lab[1]>60)c.fillText('Mesure ignorée',lab[0]+lab[1]/2,Tp+H-8);
+  // pré-alerte
+  if(hl&&preAt>=0){var pe=hist[hl-1][0];for(i=0;i<hl;i++){if(hist[i][0]>preAt&&hist[i][1]>=THR){pe=hist[i][0];break;}}
+    var x1=X(preAt),x2=Math.max(x1+2,X(pe)),right=x1>w-80;c.fillStyle='rgba(255,196,87,.18)';c.fillRect(x1,Tp,x2-x1,H);
+    c.fillStyle='#ffc457';c.font='bold 10.5px system-ui,sans-serif';c.textAlign=right?'right':'left';c.fillText('Pré-alerte',x1+(right?-3:3),Tp+H-8);}
+  // seuil
+  c.setLineDash([6,4]);c.lineWidth=1.6;c.strokeStyle=warn;c.beginPath();c.moveTo(L,Y(THR));c.lineTo(w-R,Y(THR));c.stroke();c.setLineDash([]);
+  c.fillStyle=warn;c.font='bold 11px system-ui,sans-serif';c.textAlign='left';c.fillText('Seuil '+THR,L+6,Y(THR)-5);
+  c.lineJoin='round';c.lineCap='round';
+  // montre classique (comparaison)
+  if(showCl){c.lineWidth=1.5;c.setLineDash([3,3]);c.strokeStyle=mut;c.beginPath();var st0=false;
+    hist.forEach(function(q){if(q[6]==null)return;var x=X(q[0]),y=Y(q[6]);if(!st0){c.moveTo(x,y);st0=true;}else c.lineTo(x,y);});if(st0)c.stroke();c.setLineDash([]);}
+  // fréquence cardiaque (optionnelle)
+  if(showHR&&hl){c.lineWidth=1.4;c.strokeStyle=acc2;c.globalAlpha=.85;c.beginPath();
+    hist.forEach(function(q,k){var x=X(q[0]),y=Y(Math.max(0,Math.min(100,q[2]-40)));if(k===0)c.moveTo(x,y);else c.lineTo(x,y);});c.stroke();c.globalAlpha=1;}
+  if(!hl){c.fillStyle=mut;c.font='13px system-ui,sans-serif';c.textAlign='center';c.fillText('Lancez la simulation.',(L+w-R)/2,Tp+H/2);return;}
+  // courbe du score : aire + trait (rouge au-dessus du seuil)
+  var g=c.createLinearGradient(0,Tp,0,Tp+H);g.addColorStop(0,'rgba(154,139,255,.40)');g.addColorStop(1,'rgba(154,139,255,0)');
+  c.fillStyle=g;c.beginPath();c.moveTo(X(hist[0][0]),Y(0));hist.forEach(function(q){c.lineTo(X(q[0]),Y(q[1]));});c.lineTo(X(hist[hl-1][0]),Y(0));c.closePath();c.fill();
+  c.lineWidth=3.4;c.shadowBlur=9;
+  for(i=1;i<hl;i++){var hot=hist[i][1]>=THR;c.strokeStyle=hot?warn:acc;c.shadowColor=hot?warn:acc;c.beginPath();c.moveTo(X(hist[i-1][0]),Y(hist[i-1][1]));c.lineTo(X(hist[i][0]),Y(hist[i][1]));c.stroke();}
+  c.shadowBlur=0;
+  // alerte : trait vertical, point et badge
+  if(tAl>=0){var xa=X(tAl),sa=hist[hl-1][1];for(i=0;i<hl;i++){if(hist[i][0]>=tAl){sa=hist[i][1];break;}}
+    c.strokeStyle='rgba(238,241,255,.55)';c.lineWidth=1;c.beginPath();c.moveTo(xa,24);c.lineTo(xa,Tp+H);c.stroke();
+    c.fillStyle=warn;c.beginPath();c.arc(xa,Y(sa),5,0,TAU);c.fill();c.strokeStyle=fg;c.lineWidth=2;c.stroke();
+    var bx=Math.max(L,Math.min(w-R-56,xa-28));rrect(c,bx,4,56,20,10);c.fillStyle=warn;c.fill();
+    c.fillStyle='#fff';c.font='bold 11px system-ui,sans-serif';c.textAlign='center';c.fillText('Alerte',bx+28,18);}
+  // valeur actuelle
+  p=hist[hl-1];var hx=X(p[0]),hy=Y(p[1]),hot2=p[1]>=THR;
+  if(simState==='run'){c.globalAlpha=.28;c.fillStyle=hot2?warn:acc;c.beginPath();c.arc(hx,hy,7+(Math.sin(nowT*6)+1)*3,0,TAU);c.fill();c.globalAlpha=1;}
+  c.fillStyle=hot2?warn:acc;c.beginPath();c.arc(hx,hy,5,0,TAU);c.fill();c.strokeStyle='#fff';c.lineWidth=2;c.stroke();
+  c.font='bold 13px system-ui,sans-serif';c.fillStyle=fg;c.textAlign='center';
+  var ly=hy-12<Tp+8?hy+22:hy-12;c.fillText(String(Math.round(p[1])),Math.max(L+12,Math.min(w-R-12,hx)),ly);
+}
+
+// ===== Application mobile (téléphone 3D) =====
+var phone=new THREE.Group();scene.add(phone);phone.visible=false;
+phone.add(new THREE.Mesh(ext(rr(1.15,2.3,.22),.14,.04),new THREE.MeshStandardMaterial({color:'#0a1024',metalness:.8,roughness:.3})));
+var pcv=document.createElement('canvas');pcv.width=800;pcv.height=1680;var px=pcv.getContext('2d');wrapCtx(px);px.scale(2,2);
+var ptex=new THREE.CanvasTexture(pcv);ptex.encoding=THREE.sRGBEncoding;
+var pscr=new THREE.Mesh(new THREE.PlaneGeometry(1.06,2.2),new THREE.MeshBasicMaterial({map:ptex,transparent:true,toneMapped:false}));pscr.position.z=.12;phone.add(pscr);
+var rings=[],pk=[];
+for(var ri=0;ri<3;ri++){var rg=new THREE.Mesh(new THREE.RingGeometry(.9,.95,48),new THREE.MeshBasicMaterial({color:0x6ee0ea,transparent:true,opacity:0,depthWrite:false,side:THREE.DoubleSide}));rg.visible=false;scene.add(rg);rings.push(rg);}
+for(var pj=0;pj<5;pj++){var pm=new THREE.Mesh(new THREE.SphereGeometry(.07,12,12),new THREE.MeshBasicMaterial({color:0xb79cff}));pm.visible=false;scene.add(pm);pk.push(pm);}
+$('bApp').addEventListener('click',function(){appOn=!appOn;this.setAttribute('aria-pressed',appOn?'true':'false');if(appOn){pst='home';}});
+var pst='home',phits=[],pbub=[],pScore=0,pAi=-1,pSent=false,pPsy='';
+var AI=[['Stressé','Respirons ensemble 1 min.'],['Fatigué','Faites une courte pause.'],['Ça va','Parfait, je reste là.']];
+var PM=[{k:'resp',n:'Respiration',g:'◎'},{k:'relax',n:'Relaxation',g:'❋'},{k:'etir',n:'Étirements',g:'↕'},{k:'jeux',n:'Mini-jeux',g:'◆'},{k:'ia',n:'Assistant IA',g:'✦'},{k:'psy',n:'Psychologue',g:'☺'},{k:'act',n:'Activités',g:'⚡'},{k:'som',n:'Sommeil',g:'☾'},{k:'bien',n:'Bien-être',g:'♡'},{k:'suivi',n:'Suivi',g:'▤'},{k:'rew',n:'Récompenses',g:'★'}];
+function ph2(x,y,w,h,f){phits.push({x:x,y:y,w:w,h:h,f:f});}
+function pc(x,y,w,h,label,on,f,sz){px.fillStyle=on?'#6ee0ea':'#1b2550';rrect(px,x,y,w,h,h/2);px.fill();px.fillStyle=on?'#0f1a3a':'#f1f3ff';px.font='bold '+(sz||22)+F;px.textAlign='center';px.fillText(label,x+w/2,y+h/2+8);ph2(x,y,w,h,f);}
+function pT(s){px.textAlign='center';px.fillStyle='#f1f3ff';px.font='bold 32'+F;px.fillText(s,200,130);}
+function pBack(){var toOpts=simOn&&phase===4;pc(130,40,140,44,toOpts?'‹ Options':'‹ Accueil',false,function(){pst=toOpts?'auto':'home';ses=null;pgm='';pv='';pSv=0;},20);}
+function aHome(){var c=px;c.textAlign='center';c.fillStyle='#b79cff';c.font='bold 40'+F;c.fillText('Calmora',200,96);
+  c.fillStyle='#1b2550';rrect(c,34,120,332,120,28);c.fill();c.textAlign='left';c.fillStyle='#a9b3dc';c.font='22'+F;c.fillText(KIND[kindOf()].lvl,60,160);
+  c.fillStyle=scoreV>=THR?'#b79cff':'#6ee0ea';c.font='bold 56'+F;c.fillText(Math.round(scoreV)+' / 100',60,222);
+  c.textAlign='right';c.fillStyle='#f1f3ff';c.font='bold 24'+F;c.fillText(scoreV>=THR?'Élevé':'Normal',340,222);
+  (function(){var q=Math.min(1,rwToday()/3);c.lineCap='round';c.lineWidth=7;c.strokeStyle='#26358a';c.beginPath();c.arc(318,164,24,0,TAU);c.stroke();
+    if(q>0){c.strokeStyle=q>=1?'#4fd1a1':'#b79cff';c.beginPath();c.arc(318,164,24,-Math.PI/2,-Math.PI/2+TAU*q);c.stroke();}
+    c.fillStyle='#f1f3ff';c.font='bold 20'+F;c.textAlign='center';c.fillText(String(Math.min(rwToday(),9)),318,171);ph2(34,120,332,120,function(){pst='rew';pRw=0;});})();
+  PM.forEach(function(m,i){var x=34+(i%3)*114,y=266+Math.floor(i/3)*112;c.fillStyle='#1b2550';rrect(c,x,y,104,100,24);c.fill();c.textAlign='center';c.fillStyle=i%2?'#b79cff':'#6ee0ea';c.font='34'+F;c.fillText(m.g,x+52,y+44);c.fillStyle='#f1f3ff';c.font='bold 14'+F;c.fillText(m.n,x+52,y+80);ph2(x,y,104,100,function(){pst=m.k;});});
+  var bk=null,RM={resp:'resp',relax:'relax',jeu:'jeux'};['resp','relax','jeu'].forEach(function(k){if(fx[k].length&&(!bk||fxAvg(k)>fxAvg(bk)))bk=k;});var rk=bk||'resp';
+  c.fillStyle='#3a2f8f';rrect(c,34,714,332,84,26);c.fill();c.textAlign='left';c.fillStyle='#b79cff';c.font='bold 15'+F;c.fillText(bk?'Recommandé pour vous':'Pour commencer',56,744);c.fillStyle='#f1f3ff';c.font='bold 24'+F;c.fillText(OPN[rk],56,776);
+  pc(250,734,102,44,'Commencer',true,function(){pst=RM[rk];ses=null;pgm='';},17);}
+
+var fx={resp:[],relax:[],jeu:[]},ses=null,pgm='',pgS=0,pgM=0,pv='',pSv=0,pDay=0,pSlot='',rq=[],pPsy2='';
+try{var _sv=JSON.parse(localStorage.getItem('calmora-fx'));if(_sv&&_sv.resp&&_sv.relax&&_sv.jeu)fx=_sv;}catch(e){}
+function fxSave(){try{localStorage.setItem('calmora-fx',JSON.stringify(fx));}catch(e){}}
+function sesStart(k,d){ses={k:k,t0:nowT,d:d,b:Math.round(Math.max(scoreV,56+Math.random()*18)),st:'run'};pgS=0;pgM=0;}
+function sesTick(){if(!ses||ses.st!=='run'||nowT-ses.t0<ses.d)return;
+  var p=ses.k==='jeu'?Math.min(1,pgS/10)*(1-pgM/(pgS+pgM+1)):.7+Math.random()*.3;
+  var dr=Math.round({resp:24,relax:19,jeu:8}[ses.k]*(.75+.5*p)+(ses.k==='jeu'?10*p:0)+Math.random()*6-3);
+  ses.a=Math.max(8,ses.b-Math.max(1,dr));ses.st='done';ses.pts=rwAward(ses.k,ses.b-ses.a);fx[ses.k].push({b:ses.b,a:ses.a});fx[ses.k]=fx[ses.k].slice(-20);fxSave();}
+
+// ===== Récompenses : points Calme, badges, avantages =====
+function rwNew(){return{xp:0,spent:0,shift:0,days:{},cnt:{resp:0,relax:0,jeu:0,rec:0},best:0,bestDrop:0,wk:{id:-1,n:0,paid:0},perks:{}};}
+var rw=rwNew(),rwLast=0,pRw=0,rwMsg='',rwMsgT=0;
+try{var _rw=JSON.parse(localStorage.getItem('calmora-rw'));if(_rw&&typeof _rw.xp==='number'){rw=Object.assign(rwNew(),_rw);}}catch(e){}
+function rwSave(){try{localStorage.setItem('calmora-rw',JSON.stringify(rw));}catch(e){}}
+function rwDN(){return Math.floor((Date.now()-new Date().getTimezoneOffset()*6e4)/864e5)+rw.shift;}
+function rwToday(){return rw.days[rwDN()]||0;}
+function rwStreak(){var d=rwDN(),n=0;if(!rw.days[d])d--;while(rw.days[d]){n++;d--;}return n;}
+function rwWeek(){var id=Math.floor(rwDN()/7);if(rw.wk.id!==id)rw.wk={id:id,n:0,paid:0};return rw.wk;}
+function rwAward(k,drop,base){
+  var pts=(base||10)+(drop>=20?10:drop>=10?5:0),d=rwDN();
+  rw.days[d]=(rw.days[d]||0)+1;rw.cnt[k]=(rw.cnt[k]||0)+1;if(drop>rw.bestDrop)rw.bestDrop=drop;
+  rw.xp+=pts;var st=rwStreak();if(st>rw.best)rw.best=st;
+  var w=rwWeek();w.n++;if(w.n>=5&&!w.paid){w.paid=1;rw.xp+=30;}
+  rwSave();return pts;}
+var LV=[[0,'Éveil'],[50,'Calme'],[120,'Sérénité'],[220,'Harmonie'],[350,'Zen']];
+var BG=[
+ ['Premier souffle','Respiration · 1 séance',function(){return rw.cnt.resp>=1;}],
+ ['Détente','Relaxation · 1 séance',function(){return rw.cnt.relax>=1;}],
+ ['Joueur zen','Mini-jeux · 1 séance',function(){return rw.cnt.jeu>=1;}],
+ ['Séance gardée','Séance enregistrée',function(){return rw.cnt.rec>=1;}],
+ ['Série 3 jours','3 jours d’affilée',function(){return rw.best>=3;}],
+ ['Série 7 jours','7 jours d’affilée',function(){return rw.best>=7;}],
+ ['100 points','Cumulez 100 pts',function(){return rw.xp>=100;}],
+ ['Grande détente','Baisse ≥ 20 pts',function(){return rw.bestDrop>=20;}]];
+var PK=[['Tisanes −10 %','Boutique partenaire',50,'CALM-T10'],['Méditation 1 mois','Application partenaire',120,'CALM-M1'],['Séance psy offerte','Psychologue partenaire',300,'CALM-PSY'],['Don solidaire','Fait en votre nom',80,'CALM-DON']];
+function aRew(){pT('Récompenses');pBack();var c=px,bal=rw.xp-rw.spent;
+  ['Aperçu','Badges','Avantages'].forEach(function(l,i){pc(34+i*114,160,104,44,l,pRw===i,function(){pRw=i;},17);});
+  c.lineCap='butt';
+  if(pRw===1){var n=0;
+    BG.forEach(function(b,i){var ok=b[2](),x=34+(i%2)*172,y=232+Math.floor(i/2)*104;if(ok)n++;
+      c.globalAlpha=ok?1:.5;c.fillStyle=ok?'#3a2f8f':'#1b2550';rrect(c,x,y,160,92,24);c.fill();
+      if(ok){c.strokeStyle='#b79cff';c.lineWidth=2;rrect(c,x,y,160,92,24);c.stroke();}
+      c.textAlign='left';c.fillStyle=ok?'#b79cff':'#a9b3dc';c.font='26'+F;c.fillText(ok?'★':'☆',x+14,y+34);
+      c.fillStyle='#f1f3ff';c.font='bold 17'+F;c.fillText(b[0],x+14,y+60);c.fillStyle='#a9b3dc';c.font='13'+F;c.fillText(b[1],x+14,y+80);c.globalAlpha=1;});
+    c.textAlign='center';c.fillStyle='#a9b3dc';c.font='bold 22'+F;c.fillText(n+' / '+BG.length+' badges',200,690);return;}
+  if(pRw===2){
+    PK.forEach(function(k,i){var y=226+i*108,got=!!rw.perks[i];c.fillStyle='#1b2550';rrect(c,34,y,332,96,26);c.fill();
+      c.textAlign='left';c.fillStyle='#f1f3ff';c.font='bold 18'+F;c.fillText(k[0],58,y+38);c.fillStyle='#a9b3dc';c.font='15'+F;c.fillText(k[1],58,y+66);
+      pc(246,y+16,104,40,got?'Débloqué ✓':'Débloquer',got,function(){
+        if(rw.perks[i])return;
+        if(rw.xp-rw.spent>=k[2]){rw.perks[i]=1;rw.spent+=k[2];rwSave();}else{rwMsg='Points insuffisants';rwMsgT=nowT+2.2;}},16);
+      c.textAlign='center';c.fillStyle=got?'#4fd1a1':'#a9b3dc';c.font='15'+F;c.fillText(got?k[3]:k[2]+' pts',298,y+82);});
+    c.textAlign='center';c.fillStyle='#6ee0ea';c.font='bold 22'+F;c.fillText('Solde : '+bal+' pts',200,690);
+    if(nowT<rwMsgT){c.fillStyle='#ff9aa6';c.font='20'+F;c.fillText(rwMsg,200,726);}
+    c.fillStyle='#a9b3dc';c.font='18'+F;c.fillText('Données d’exemple',200,772);return;}
+  var td=rwToday(),q=Math.min(1,td/3);
+  c.lineCap='round';c.lineWidth=16;c.strokeStyle='#1b2550';c.beginPath();c.arc(200,330,78,0,TAU);c.stroke();
+  if(q>0){c.strokeStyle=q>=1?'#4fd1a1':'#6ee0ea';c.beginPath();c.arc(200,330,78,-Math.PI/2,-Math.PI/2+TAU*q);c.stroke();}
+  c.lineCap='butt';c.textAlign='center';c.fillStyle='#f1f3ff';c.font='bold 48'+F;c.fillText(Math.min(td,99)+' / 3',200,347);
+  c.fillStyle='#a9b3dc';c.font='22'+F;c.fillText('séances aujourd’hui',200,442);
+  [['Points',bal],['Série (jours)',rwStreak()]].forEach(function(r,i){var x=34+i*172;c.fillStyle='#1b2550';rrect(c,x,466,160,76,24);c.fill();
+    c.textAlign='center';c.fillStyle='#a9b3dc';c.font='18'+F;c.fillText(r[0],x+80,492);c.fillStyle=i?'#b79cff':'#6ee0ea';c.font='bold 34'+F;c.fillText(String(r[1]),x+80,528);});
+  var li=0;LV.forEach(function(l,i){if(rw.xp>=l[0])li=i;});var nx=LV[li+1],lq=nx?(rw.xp-LV[li][0])/(nx[0]-LV[li][0]):1;
+  c.fillStyle='#1b2550';rrect(c,34,556,332,84,24);c.fill();
+  c.textAlign='left';c.fillStyle='#f1f3ff';c.font='bold 24'+F;c.fillText('Niveau '+(li+1),58,586);
+  c.textAlign='right';c.fillStyle='#b79cff';c.fillText(LV[li][1],342,586);
+  c.fillStyle='#0f1a3a';rrect(c,58,598,284,12,6);c.fill();c.fillStyle='#b79cff';rrect(c,58,598,Math.max(12,284*lq),12,6);c.fill();
+  c.textAlign='left';c.fillStyle='#a9b3dc';c.font='16'+F;c.fillText(nx?(nx[0]-rw.xp)+' pts avant le niveau suivant':'Niveau maximum',58,630);
+  var w=rwWeek(),wq=Math.min(1,w.n/5);
+  c.fillStyle='#1b2550';rrect(c,34,652,332,84,24);c.fill();
+  c.textAlign='left';c.fillStyle='#f1f3ff';c.font='bold 22'+F;c.fillText('Défi hebdo',58,682);
+  c.textAlign='right';c.fillStyle='#a9b3dc';c.font='18'+F;c.fillText(Math.min(w.n,5)+' / 5 séances',342,682);
+  c.fillStyle='#0f1a3a';rrect(c,58,694,284,12,6);c.fill();c.fillStyle=w.paid?'#4fd1a1':'#6ee0ea';rrect(c,58,694,Math.max(12,284*wq),12,6);c.fill();
+  c.textAlign='left';c.fillStyle=w.paid?'#4fd1a1':'#a9b3dc';c.font='16'+F;c.fillText(w.paid?'Défi réussi · +30 pts':'Bonus : +30 pts à 5 séances',58,726);
+  pc(34,752,190,40,'Jour suivant (démo)',false,function(){rw.shift++;rwSave();},16);
+  pc(234,752,132,40,'Réinitialiser',false,function(){rw=rwNew();rwSave();},16);}
+function sesWrap(k,body){var c=px;
+  if(!ses||ses.k!==k){c.fillStyle='#a9b3dc';c.font='22'+F;c.textAlign='center';c.fillText('Séance courte · 20 s',200,200);c.fillText('Le score est comparé avant et après.',200,236);
+    pc(34,640,332,60,'Démarrer',true,function(){sesStart(k,20);},24);return;}
+  sesTick();
+  if(ses.st==='run'){var q=(nowT-ses.t0)/ses.d;body(q);c.fillStyle='#1b2550';rrect(c,50,700,300,14,7);c.fill();c.fillStyle='#6ee0ea';rrect(c,50,700,Math.max(14,300*q),14,7);c.fill();c.fillStyle='#a9b3dc';c.font='20'+F;c.textAlign='center';c.fillText(Math.ceil(ses.d*(1-q))+' s',200,740);return;}
+  c.fillStyle='#1b2550';rrect(c,34,180,332,300,28);c.fill();
+  [['Avant',ses.b,'#a9b3dc'],['Après',ses.a,'#6ee0ea']].forEach(function(r,i){c.fillStyle=r[2];c.font='22'+F;c.textAlign='left';c.fillText(r[0],62,236+i*70);c.font='bold 44'+F;c.textAlign='right';c.fillText(r[1]+' / 100',338,244+i*70);});
+  c.fillStyle='#4fd1a1';c.font='bold 34'+F;c.textAlign='center';c.fillText('−'+(ses.b-ses.a)+' pts',200,400);
+  c.fillStyle='#a9b3dc';c.font='20'+F;c.fillText('Mesure simulée',200,432);c.fillStyle='#b79cff';c.font='bold 22'+F;c.fillText('+'+ses.pts+' pts Calme',200,466);
+  pc(34,520,332,56,'Recommencer',false,function(){sesStart(k,20);},22);
+  pc(34,590,332,56,'Voir l’efficacité',true,function(){pst='suivi';pSv=1;},22);}
+function aResp(){pT('Respiration');pBack();sesWrap('resp',function(){var c=px,q=(nowT-ses.t0)%10,inh=q<4,k=inh?q/4:1-(q-4)/6,r=50+70*k;
+  c.fillStyle='rgba(110,224,234,.25)';c.beginPath();c.arc(200,400,r+34,0,7);c.fill();c.fillStyle='#6ee0ea';c.beginPath();c.arc(200,400,r,0,7);c.fill();
+  c.fillStyle='#0f1a3a';c.font='bold 30'+F;c.textAlign='center';c.fillText(inh?'Inspirez':'Expirez',200,410);
+  c.fillStyle='#a9b3dc';c.font='22'+F;c.fillText('Rythme 4 · 6 secondes',200,640);});}
+function aRelax(){pT('Relaxation');pBack();sesWrap('relax',function(q){var c=px,st=['Relâchez les épaules','Détendez la mâchoire','Desserrez les mains','Laissez partir la tension'],i=Math.min(3,Math.floor(q*4)),u=(q*4)%1;
+  c.lineWidth=14;c.lineCap='round';c.strokeStyle='#1b2550';c.beginPath();c.arc(200,400,110,0,TAU);c.stroke();
+  c.strokeStyle='#b79cff';c.beginPath();c.arc(200,400,110,-Math.PI/2,-Math.PI/2+TAU*u);c.stroke();
+  c.fillStyle='#f1f3ff';c.font='bold 28'+F;c.textAlign='center';c.fillText(st[i],200,408);
+  c.fillStyle='#a9b3dc';c.font='22'+F;c.fillText('Étape '+(i+1)+' / 4 · détente guidée',200,640);});}
+function bulles(){var c=px;
+  if(!pbub.length)for(var i=0;i<6;i++)pbub.push({x:60+Math.random()*280,y:240+Math.random()*500,r:28+Math.random()*18,v:.8+Math.random()});
+  c.fillStyle='#a9b3dc';c.font='24'+F;c.textAlign='center';c.fillText('Touchez les bulles · '+pgS,200,200);
+  pbub.forEach(function(b,i){b.y-=b.v;if(b.y<230){b.y=680;b.x=60+Math.random()*280;}
+    c.fillStyle=i%2?'rgba(183,156,255,.85)':'rgba(110,224,234,.85)';c.beginPath();c.arc(b.x,b.y,b.r,0,7);c.fill();
+    ph2(b.x-b.r,b.y-b.r,b.r*2,b.r*2,function(){pgS++;b.y=680;b.x=60+Math.random()*280;});});}
+function rythme(){var c=px,r=40+90*(((nowT-ses.t0)%3)/3);
+  c.strokeStyle='#b79cff';c.lineWidth=4;c.beginPath();c.arc(200,430,100,0,TAU);c.stroke();
+  c.fillStyle='rgba(110,224,234,.35)';c.beginPath();c.arc(200,430,r,0,TAU);c.fill();
+  c.fillStyle='#a9b3dc';c.font='20'+F;c.textAlign='center';c.fillText('Touchez quand le cercle atteint l’anneau',200,190);
+  c.textAlign='left';c.fillText('Réussis',120,610);c.textAlign='right';c.fillStyle='#f1f3ff';c.font='bold 24'+F;c.fillText(String(pgS),280,610);
+  ph2(0,230,400,420,function(){if(Math.abs(r-100)<14)pgS++;else pgM++;});}
+var gm={},SC4=['#6ee0ea','#b79cff','#4fd1a1','#ff9f6b'],GL=['●','▲','■','◆'];
+function sequence(){var c=px;if(gm.t!==ses.t0)gm={t:ses.t0,sq:[Math.floor(Math.random()*4)],i:0,ph:'show',tm:nowT};
+  var el=nowT-gm.tm,lit=-1;
+  if(gm.ph==='show'){var st=Math.floor(el/.7);if(st>=gm.sq.length){gm.ph='in';gm.i=0;}else if(st>=0&&el%.7<.5)lit=gm.sq[st];}
+  c.fillStyle='#a9b3dc';c.font='22'+F;c.textAlign='center';c.fillText(gm.ph==='show'?'Observez':'À vous',200,200);
+  [0,1,2,3].forEach(function(k){var x=44+(k%2)*160,y=250+Math.floor(k/2)*170,on=lit===k||(gm.fl&&gm.fl[0]===k&&nowT-gm.fl[1]<.25);c.globalAlpha=on?1:.45;c.fillStyle=SC4[k];rrect(c,x,y,152,160,32);c.fill();c.globalAlpha=1;
+    if(gm.ph==='in')ph2(x,y,152,160,function(){gm.fl=[k,nowT];if(k===gm.sq[gm.i]){pgS++;gm.i++;if(gm.i>=gm.sq.length){gm.sq.push(Math.floor(Math.random()*4));gm.ph='show';gm.tm=nowT+.4;}}else{pgM++;gm.ph='show';gm.tm=nowT+.4;}});});}
+function paires(){var c=px;if(gm.t!==ses.t0||gm.m.length===8)gm={t:ses.t0,a:[0,0,1,1,2,2,3,3].sort(function(){return Math.random()-.5;}),f:[],m:[]};
+  c.fillStyle='#a9b3dc';c.font='22'+F;c.textAlign='center';c.fillText('Trouvez les paires',200,200);
+  gm.a.forEach(function(v,i){var x=34+(i%4)*84,y=270+Math.floor(i/4)*130,up=gm.f.indexOf(i)>=0||gm.m.indexOf(i)>=0;c.fillStyle=up?SC4[v]:'#1b2550';rrect(c,x,y,76,110,20);c.fill();
+    if(up){c.fillStyle='#0f1a3a';c.font='bold 34'+F;c.textAlign='center';c.fillText(GL[v],x+38,y+66);}
+    else ph2(x,y,76,110,function(){if(gm.f.length>=2)return;gm.f.push(i);if(gm.f.length===2){var p=gm.f[0],q=gm.f[1];if(gm.a[p]===gm.a[q]){gm.m.push(p,q);gm.f=[];pgS+=3;}else{pgM++;setTimeout(function(){gm.f=[];},600);}}});});}
+function aGame(){pT('Mini-jeux');pBack();var c=px;
+  if(!pgm){[['bul','Bulles','Touchez les bulles'],['ryt','Rythme','Suivez le cercle'],['seq','Séquence','Mémorisez et répétez'],['par','Paires','Retrouvez les cartes']].forEach(function(g,i){var y=170+i*128;c.fillStyle='#1b2550';rrect(c,34,y,332,110,28);c.fill();c.textAlign='left';c.fillStyle='#f1f3ff';c.font='bold 28'+F;c.fillText(g[1],62,y+48);c.fillStyle='#a9b3dc';c.font='20'+F;c.fillText(g[2],62,y+82);ph2(34,y,332,110,function(){pgm=g[0];ses=null;pbub=[];});});return;}
+  sesWrap('jeu',{bul:bulles,ryt:rythme,seq:sequence,par:paires}[pgm]);}
+var OPN={resp:'Respiration',relax:'Relaxation',jeu:'Mini-jeux'};
+function fxAvg(k){var a=fx[k];return a.length?a.reduce(function(t,e){return t+e.b-e.a;},0)/a.length:0;}
+function aFx(){var c=px,ks=['resp','relax','jeu'],best=null;
+  ks.forEach(function(k){if(fx[k].length&&(!best||fxAvg(k)>fxAvg(best)))best=k;});
+  ks.forEach(function(k,i){var y=222+i*112,n=fx[k].length,d=fxAvg(k);c.fillStyle='#1b2550';rrect(c,34,y,332,98,24);c.fill();
+    c.textAlign='left';c.fillStyle='#f1f3ff';c.font='bold 24'+F;c.fillText(OPN[k],56,y+36);c.fillStyle='#a9b3dc';c.font='18'+F;c.fillText('Séances',56,y+62);c.fillText(String(n),136,y+62);
+    c.fillStyle='#2a3570';rrect(c,56,y+78,250,8,4);c.fill();c.fillStyle=k===best?'#4fd1a1':'#6ee0ea';rrect(c,56,y+78,Math.max(8,250*Math.min(1,d/30)),8,4);c.fill();
+    c.textAlign='right';c.fillStyle='#f1f3ff';c.font='bold 28'+F;c.fillText(n?'−'+Math.round(d):'–',346,y+40);
+    if(k===best){c.fillStyle='#4fd1a1';rrect(c,236,y+50,110,26,13);c.fill();c.fillStyle='#0f1a3a';c.font='bold 15'+F;c.textAlign='center';c.fillText('Recommandé',291,y+68);}});
+  c.textAlign='center';c.fillStyle=best?'#4fd1a1':'#a9b3dc';c.font='bold 24'+F;c.fillText(best?'Conseillé : '+OPN[best]:'Faites une séance de chaque option.',200,600);
+  c.fillStyle='#a9b3dc';c.font='18'+F;c.fillText('Baisse moyenne du score · simulée',200,640);
+  pc(130,670,140,40,'Réinitialiser',false,function(){fx.resp=[];fx.relax=[];fx.jeu=[];fxSave();},16);}
+var SL=['09:00','10:30','14:00','15:30','17:00','18:30'],PRIX=60,COM=.15;
+function dLab(i){var d=new Date();d.setDate(d.getDate()+1+i);return d;}
+function fd(d,o){return d.toLocaleDateString(LANG==='fr'?'fr-FR':LANG==='ar'?'ar-TN':'en-GB',o);}
+function rqSt(r){var e=nowT-r.t0;return e<4?0:e<9?1:2;}
+function pBk(f){pc(130,40,140,44,'‹ Retour',false,f,20);}
+var PS=[{n:'Dr Salma B.',t:'Psychologue clinicienne',sp:['Anxiété','Stress'],lg:'FR · AR',rt:4.9,pr:60,cm:.15},{n:'Dr Karim M.',t:'Psychothérapeute TCC',sp:['Sommeil','Burn-out'],lg:'FR · EN',rt:4.8,pr:70,cm:.15},{n:'Dr Amel T.',t:'Psychologue du travail',sp:['Burn-out','Stress'],lg:'AR · FR',rt:4.7,pr:50,cm:.12},{n:'Dr Yassine R.',t:'Psychologue clinicien',sp:['Anxiété','Sommeil'],lg:'FR · EN · AR',rt:4.9,pr:80,cm:.18}];
+var pF='Tous',pPs=0,pMode=0,pMot='',pShare=false,MD=['Visio','Cabinet'];
+function cmOf(q){return +(q.pr*q.cm).toFixed(1);}
+var tm=document.createElement('div');tm.id='txm';tm.hidden=true;
+tm.innerHTML='<div class="txp"><h3 id="txt"></h3><textarea id="txa" rows="5" dir="auto"></textarea><div class="txr"><button type="button" id="txc"></button><button type="button" id="txo" class="primary"></button></div></div>';
+document.body.appendChild(tm);
+var txCb=null;
+function askText(title,init,max,cb){txCb=cb;$('txt').textContent=tr(title);var a=$('txa');a.maxLength=max;a.value=init||'';a.placeholder=tr('Écrivez ici…');$('txc').textContent=tr('Annuler');$('txo').textContent=tr('Valider');tm.hidden=false;setTimeout(function(){a.focus();},50);}
+function txClose(ok){var v=$('txa').value.trim(),f=txCb;tm.hidden=true;txCb=null;if(ok&&f)f(v);}
+$('txc').addEventListener('click',function(){txClose(false);});$('txa').addEventListener('keydown',function(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();txClose(true);}});$('txo').addEventListener('click',function(){txClose(true);});
+tm.addEventListener('click',function(e){if(e.target===tm)txClose(false);});
+window.addEventListener('keydown',function(e){if(!tm.hidden&&e.key==='Escape'){txClose(false);e.stopImmediatePropagation();}},true);
+function mot(t,n){t=(t||'').trim();return t?(t.length>n?t.slice(0,n-1)+'…':t):tr('Sans motif précis');}
+var chat={},chQ=[],callSt=0,callT0=0,callD=0,callM=0,mute=false,spk=false;
+var MQ=[['Bonjour, j’aimerais un rendez-vous.','Bonjour, avec plaisir. Choisissez un créneau dans « Prendre rendez-vous »..'],['Je me sens stressé(e) ces derniers jours.','Merci de me le dire. Respirez calmement ; nous pouvons en parler en consultation.'],['J’ai du mal à dormir.','Je comprends. Gardez des horaires réguliers ; nous en parlerons ensemble.'],['Merci beaucoup.','Avec plaisir. Je reste disponible.']];
+MQ[0][1]=MQ[0][1].replace('..','.');
+function hm(){var d=new Date();return ('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2);}
+function mmss(t){t=Math.floor(t);return ('0'+Math.floor(t/60)).slice(-2)+':'+('0'+t%60).slice(-2);}
+function wrapL(c,t,w){var o=[],l='';tr(t).split(' ').forEach(function(x){var n=l?l+' '+x:x;if(c.measureText(n).width>w&&l){o.push(l);l=x;}else l=n;});o.push(l);return o;}
+function psSel(y,f){PS.forEach(function(q,i){pc(34+i*84,y,78,36,q.n.split(' ')[1],pPs===i,function(){pPs=i;if(f)f();},16);});}
+function hang(y,l,f){var c=px;c.fillStyle='#ff6b7a';rrect(c,34,y,332,58,29);c.fill();c.fillStyle='#fff';c.font='bold 24'+F;c.textAlign='center';c.fillText(l,200,y+37);ph2(34,y,332,58,f);}
+function aMsg(){var c=px,L=chat[pPs]=chat[pPs]||[];
+  pBk(function(){pv='';});psSel(150);
+  chQ=chQ.filter(function(r){if(nowT>=r.at){(chat[r.i]=chat[r.i]||[]).push({me:0,t:r.t,h:hm()});return false;}return true;});
+  c.textAlign='center';c.fillStyle='#7a85b8';c.font='14'+F;c.fillText('Échange confidentiel',200,206);
+  var typ=chQ.some(function(r){return r.i===pPs;});
+  if(!L.length&&!typ){c.fillStyle='#a9b3dc';c.font='19'+F;c.fillText('Choisissez un message pour commencer.',200,360);}
+  c.font='17'+F;var lay=[],tot=0,k;
+  for(k=L.length-1;k>=0;k--){var ln=wrapL(c,L[k].t,236),h=ln.length*22+38;if(tot+h+8>(typ?320:356))break;lay.unshift({m:L[k],ln:ln,h:h});tot+=h+8;}
+  var y=222;lay.forEach(function(b){var me=b.m.me,x=me?366-264:34;c.fillStyle=me?'#5b42c4':'#1b2550';rrect(c,x,y,264,b.h,20);c.fill();c.textAlign='left';c.fillStyle='#fff';c.font='17'+F;b.ln.forEach(function(l,i){c.fillText(l,x+14,y+28+i*22);});c.fillStyle=me?'#d9d2ff':'#7a85b8';c.font='13'+F;c.textAlign='right';c.fillText(b.m.h+(me&&b.m!==L[L.length-1]?' ✓✓':''),x+250,y+b.h-10);y+=b.h+8;});
+  if(typ){c.fillStyle='#1b2550';rrect(c,34,y,120,38,19);c.fill();c.fillStyle='#a9b3dc';c.font='16'+F;c.textAlign='left';c.fillText('Écrit…',52,y+25);}
+  pc(34,600,332,42,'✎ Écrire un message…',true,function(){askText('Écrire un message','',300,function(v){if(!v)return;L.push({me:1,t:v,h:hm()});chQ.push({i:pPs,at:nowT+(pPs===2?4.5:1.8),t:'Merci pour votre message. Je vous réponds dès que possible.'});});},19);
+  MQ.slice(0,3).forEach(function(q,i){pc(34,652+i*44,332,38,q[0],false,function(){L.push({me:1,t:q[0],h:hm()});chQ.push({i:pPs,at:nowT+(pPs===2?4.5:1.8),t:q[1]});},15);});}
+function aCall(){var c=px,p=PS[pPs],on=pPs!==2,ini=p.n.split(' ')[1][0],cy=callSt?300:330,r=70;
+  pBk(function(){pv='';callSt=0;});if(callSt===0)psSel(150,function(){callSt=0;});
+  if(callSt===1&&nowT-callT0>3){callSt=2;callT0=nowT;}
+  if(callSt===1)[0,1].forEach(function(k){var u=((nowT*.8)+k*.5)%1;c.strokeStyle='rgba(110,224,234,'+((1-u)*.6)+')';c.lineWidth=3;c.beginPath();c.arc(200,cy,r+u*50,0,7);c.stroke();});
+  c.fillStyle='#3a2f8f';c.beginPath();c.arc(200,cy,r,0,7);c.fill();c.fillStyle='#f1f3ff';c.font='bold 64'+F;c.textAlign='center';c.fillText(ini,200,cy+22);
+  c.font='bold 26'+F;c.fillText(p.n,200,cy+r+44);c.fillStyle='#a9b3dc';c.font='18'+F;c.fillText(p.t,200,cy+r+72);
+  if(callSt===0){c.fillStyle=on?'#4fd1a1':'#ff9f6b';c.beginPath();c.arc(70,cy+r+110,6,0,7);c.fill();c.font='19'+F;c.textAlign='left';c.fillText(on?'Disponible maintenant':'Indisponible pour le moment',86,cy+r+117);
+    ['Appel vocal','Visio'].forEach(function(m,k){pc(34+k*174,560,158,44,m,callM===k,function(){callM=k;},19);});
+    if(on)pc(34,630,332,58,'Appeler',true,function(){callSt=1;callT0=nowT;mute=false;spk=false;},24);else pc(34,630,332,58,'Prendre rendez-vous',true,function(){pv='cal';},22);
+    c.textAlign='center';c.fillStyle='#7a85b8';c.font='15'+F;c.fillText('Échange confidentiel',200,730);return;}
+  if(callSt===1){c.textAlign='center';c.fillStyle='#6ee0ea';c.font='bold 22'+F;c.fillText('Appel en cours…',200,cy+r+120);hang(640,'Raccrocher',function(){callSt=0;});return;}
+  if(callSt===2){var t=nowT-callT0;c.textAlign='center';c.fillStyle='#4fd1a1';c.font='bold 38'+F;c.fillText(mmss(t),200,cy+r+124);c.fillStyle='#a9b3dc';c.font='17'+F;c.fillText(['Appel vocal','Visio'][callM],200,cy+r+152);
+    if(callM){c.fillStyle='#0f1a3a';rrect(c,286,160,80,110,14);c.fill();c.strokeStyle='#6ee0ea';c.lineWidth=2;rrect(c,286,160,80,110,14);c.stroke();}
+    pc(34,580,158,50,mute?'Muet ✓':'Muet',mute,function(){mute=!mute;},19);pc(208,580,158,50,spk?'Haut-parleur ✓':'Haut-parleur',spk,function(){spk=!spk;},17);
+    hang(650,'Raccrocher',function(){callD=nowT-callT0;callSt=3;});return;}
+  c.textAlign='center';c.fillStyle='#f1f3ff';c.font='bold 26'+F;c.fillText('Appel terminé',200,cy+r+124);c.fillStyle='#a9b3dc';c.font='20'+F;c.fillText('Durée',200,cy+r+156);c.fillStyle='#4fd1a1';c.font='bold 30'+F;c.fillText(mmss(callD),200,cy+r+192);
+  pc(34,560,332,52,'Écrire un message',false,function(){pv='msg';callSt=0;},20);pc(34,624,332,52,'Prendre rendez-vous',true,function(){pv='cal';callSt=0;},20);}
+function nextRdv(c){var r=null;rq.forEach(function(q){if(!q.x&&rqSt(q)===2)r=q;});
+  c.fillStyle='#1b2550';rrect(c,34,598,332,84,24);c.fill();c.textAlign='left';
+  if(!r){c.fillStyle='#7a85b8';c.font='17'+F;c.fillText('Aucun rendez-vous confirmé',56,646);return;}
+  c.fillStyle='#4fd1a1';c.font='bold 15'+F;c.fillText('Prochain rendez-vous',56,626);c.fillStyle='#f1f3ff';c.font='bold 20'+F;c.fillText(PS[r.p].n,56,654);c.fillStyle='#a9b3dc';c.font='16'+F;c.fillText(fd(dLab(r.d),{weekday:'short',day:'numeric',month:'short'})+' · '+r.s+' · '+tr(MD[r.m]),56,674);}
+function aPsy(){var c=px,p=PS[pPs],ST=['Envoyée','Vue','Confirmée'];pT({list:'Psychologues',prof:'Profil',msg:'Messages',call:'Appel'}[pv]||(pv?'Rendez-vous':'Psychologue'));
+  if(pv==='msg'){aMsg();return;}if(pv==='call'){aCall();return;}
+  if(pv==='list'){pBk(function(){pv='';});
+    ['Tous','Anxiété','Sommeil','Burn-out'].forEach(function(t,k){pc(34+k*84,160,78,40,t,pF===t,function(){pF=t;},16);});
+    PS.map(function(q,k){return k;}).filter(function(k){return pF==='Tous'||PS[k].sp.indexOf(pF)>=0;}).forEach(function(k,n){var q=PS[k],y=214+n*126;
+      c.fillStyle='#1b2550';rrect(c,34,y,332,114,26);c.fill();c.textAlign='left';c.fillStyle='#f1f3ff';c.font='bold 23'+F;c.fillText(q.n,56,y+36);c.fillStyle='#a9b3dc';c.font='17'+F;c.fillText(q.t,56,y+62);c.fillText(q.sp.map(tr).join(' · '),56,y+88);
+      c.textAlign='right';c.fillStyle='#ffd166';c.font='bold 20'+F;c.fillText('★ '+q.rt,346,y+36);c.fillStyle='#f1f3ff';c.fillText(q.pr+' DT',346,y+66);c.fillStyle='#a9b3dc';c.font='16'+F;c.fillText(q.lg,346,y+92);
+      ph2(34,y,332,114,function(){pPs=k;pv='prof';});});
+    c.textAlign='center';c.fillStyle='#7a85b8';c.font='16'+F;c.fillText('Profils d’exemple · tarifs indicatifs',200,790);return;}
+  if(pv==='prof'){pBk(function(){pv='list';});
+    c.fillStyle='#1b2550';rrect(c,34,160,332,124,28);c.fill();c.textAlign='left';c.fillStyle='#f1f3ff';c.font='bold 26'+F;c.fillText(p.n,58,200);c.fillStyle='#a9b3dc';c.font='19'+F;c.fillText(p.t,58,230);c.font='17'+F;c.fillText(p.sp.map(tr).join(' · ')+'  ·  '+p.lg,58,258);
+    c.textAlign='right';c.fillStyle='#ffd166';c.font='bold 22'+F;c.fillText('★ '+p.rt,346,200);
+    c.textAlign='left';c.fillStyle='#a9b3dc';c.font='18'+F;c.fillText('Mode de consultation',34,320);
+    MD.forEach(function(m,k){pc(34+k*174,332,158,44,m,pMode===k,function(){pMode=k;},19);});
+    c.textAlign='left';c.fillStyle='#a9b3dc';c.font='18'+F;c.fillText('Motif (facultatif)',34,410);
+    c.fillStyle='#1b2550';rrect(c,34,420,332,56,22);c.fill();c.strokeStyle=pMot?'#6ee0ea':'#2a3570';c.lineWidth=2;rrect(c,34,420,332,56,22);c.stroke();c.textAlign='left';c.font='17'+F;
+    if(pMot){var ml=wrapL(c,pMot,pMot?232:280);if(ml.length>2){ml=ml.slice(0,2);ml[1]+='…';}c.fillStyle='#f1f3ff';ml.forEach(function(l,i){c.fillText(l,52,(ml.length>1?442:453)+i*22);});}else{c.fillStyle='#7a85b8';c.fillText('Écrivez en quelques mots…',52,454);}
+    ph2(34,420,332,56,function(){askText('Motif (facultatif)',pMot,200,function(v){pMot=v;});});
+    if(pMot)pc(302,430,54,36,'✕',false,function(){pMot='';},18);
+    pc(34,484,332,52,pShare?'Suivi partagé ✓':'Partager mon suivi (optionnel)',pShare,function(){pShare=!pShare;},19);
+    c.textAlign='left';c.fillStyle='#7a85b8';c.font='15'+F;c.fillText('Score moyen et efficacité des séances, avec votre accord.',34,566);
+    c.fillStyle='#a9b3dc';c.font='20'+F;c.fillText('Tarif de la consultation',34,620);c.textAlign='right';c.fillStyle='#f1f3ff';c.font='bold 22'+F;c.fillText(p.pr+' DT',366,620);
+    pc(34,650,332,58,'Choisir un créneau',true,function(){pSlot='';pv='cal';},24);return;}
+  if(pv==='cal'){pBk(function(){pv='prof';pSlot='';});
+    [0,1,2,3,4,5,6].forEach(function(i){var d=dLab(i),x=34+i*48,on=i===pDay;c.fillStyle=on?'#6ee0ea':'#1b2550';rrect(c,x,170,44,70,14);c.fill();c.textAlign='center';c.fillStyle=on?'#0f1a3a':'#a9b3dc';c.font='13'+F;c.fillText(fd(d,{weekday:'short'}),x+22,194);c.fillStyle=on?'#0f1a3a':'#f1f3ff';c.font='bold 22'+F;c.fillText(String(d.getDate()),x+22,226);ph2(x,170,44,70,function(){pDay=i;pSlot='';});});
+    c.fillStyle='#a9b3dc';c.font='20'+F;c.textAlign='left';c.fillText('Créneaux disponibles',34,288);
+    SL.forEach(function(t,i){var x=34+(i%3)*114,y=306+Math.floor(i/3)*64,tk=(pDay*7+i*3+pPs*2)%5<2,on=pSlot===t;c.fillStyle=on?'#6ee0ea':tk?'#141c40':'#1b2550';rrect(c,x,y,104,52,26);c.fill();c.textAlign='center';c.fillStyle=on?'#0f1a3a':tk?'#4a5588':'#f1f3ff';c.font='bold 22'+F;c.fillText(t,x+52,y+34);if(!tk)ph2(x,y,104,52,function(){pSlot=t;});});
+    c.fillStyle='#a9b3dc';c.font='20'+F;c.textAlign='left';c.fillText(p.n,34,480);c.textAlign='right';c.fillStyle='#f1f3ff';c.font='bold 22'+F;c.fillText(p.pr+' DT',366,480);
+    if(pSlot)pc(34,520,332,58,'Continuer',true,function(){pv='sum';},24);return;}
+  if(pv==='sum'){pBk(function(){pv='cal';});var d=dLab(pDay);
+    c.fillStyle='#1b2550';rrect(c,34,160,332,128,28);c.fill();c.textAlign='left';c.fillStyle='#f1f3ff';c.font='bold 26'+F;c.fillText(p.n,58,202);c.fillStyle='#6ee0ea';c.font='bold 20'+F;c.fillText(fd(d,{weekday:'long',day:'numeric',month:'long'})+' · '+pSlot,58,238);c.fillStyle='#a9b3dc';c.font='19'+F;c.fillText(tr(MD[pMode])+' · '+mot(pMot,26),58,270);
+    [['Tarif de la consultation',p.pr+' DT'],['Commission Calmora',cmOf(p)+' DT · '+Math.round(p.cm*100)+' %']].forEach(function(r,i){var y=340+i*52;c.textAlign='left';c.fillStyle='#a9b3dc';c.font='20'+F;c.fillText(r[0],34,y);c.textAlign='right';c.fillStyle='#f1f3ff';c.font='bold 22'+F;c.fillText(r[1],366,y);});
+    c.textAlign='left';c.fillStyle='#a9b3dc';c.font='16'+F;c.fillText('Payée par le psychologue partenaire, sans surcoût pour vous.',34,456);
+    if(pShare){c.fillStyle='#4fd1a1';c.font='bold 19'+F;c.fillText('Suivi partagé ✓',34,498);}
+    pc(34,540,332,58,'Envoyer la demande',true,function(){rq.push({p:pPs,d:pDay,s:pSlot,t0:nowT,m:pMode,mo:pMot,x:0});pSlot='';pv='trk';},24);return;}
+  if(pv==='trk'){pBk(function(){pv='';});
+    if(!rq.length){c.fillStyle='#a9b3dc';c.font='24'+F;c.textAlign='center';c.fillText('Aucune demande en cours',200,300);}
+    rq.slice(-2).forEach(function(r,i){var y=160+i*210,s=rqSt(r),q=PS[r.p];c.fillStyle='#1b2550';rrect(c,34,y,332,198,28);c.fill();c.textAlign='left';c.fillStyle='#f1f3ff';c.font='bold 22'+F;c.fillText(q.n,56,y+38);
+      c.fillStyle='#a9b3dc';c.font='17'+F;c.fillText(fd(dLab(r.d),{weekday:'short',day:'numeric',month:'short'})+' · '+r.s+' · '+tr(MD[r.m])+' · '+mot(r.mo,10),56,y+66);
+      if(!r.x&&s<2)pc(262,y+14,90,34,'Annuler',false,function(){r.x=1;},16);
+      if(r.x){c.fillStyle='#ff6b7a';c.font='bold 22'+F;c.textAlign='center';c.fillText('Annulée',200,y+130);return;}
+      ST.forEach(function(n,j){var x=84+j*116;if(j<2){c.strokeStyle=j<s?'#4fd1a1':'#2a3570';c.lineWidth=4;c.beginPath();c.moveTo(x,y+106);c.lineTo(x+116,y+106);c.stroke();}c.fillStyle=j<=s?'#4fd1a1':'#2a3570';c.beginPath();c.arc(x,y+106,12,0,7);c.fill();c.textAlign='center';c.fillStyle=j<=s?'#f1f3ff':'#7a85b8';c.font='17'+F;c.fillText(n,x,y+146);});
+      if(s===2){c.textAlign='left';c.fillStyle='#a9b3dc';c.font='17'+F;c.fillText('Commission estimée',56,y+182);c.textAlign='right';c.fillStyle='#4fd1a1';c.font='bold 19'+F;c.fillText(cmOf(q)+' DT',344,y+182);}});
+    pc(34,600,332,56,'Nouveau rendez-vous',true,function(){pv='list';},22);return;}
+  pBack();var ok=rq.filter(function(r){return !r.x&&rqSt(r)===2;}),tot=ok.reduce(function(t,r){return t+cmOf(PS[r.p]);},0);
+  c.fillStyle='#1b2550';rrect(c,34,160,332,124,28);c.fill();
+  [['Demandes',rq.length],['Confirmées',ok.length],['Commission',+tot.toFixed(1)+' DT']].forEach(function(r,i){var x=89+i*111;c.textAlign='center';c.fillStyle='#f1f3ff';c.font='bold 26'+F;c.fillText(String(r[1]),x,222);c.fillStyle='#a9b3dc';c.font='16'+F;c.fillText(r[0],x,254);});
+  pc(34,304,332,56,'Trouver un psychologue',true,function(){pv='list';},22);
+  pc(34,372,332,56,rq.length?'Mes demandes · '+rq.length:'Mes demandes',false,function(){pv='trk';},22);
+  pc(34,440,332,52,'Écrire un message',false,function(){pv='msg';},20);pc(34,504,332,52,'Appeler',false,function(){pv='call';callSt=0;},20);
+  if(pPsy2){c.fillStyle='#6ee0ea';c.font='bold 22'+F;c.textAlign='center';c.fillText('Demande envoyée',200,620);c.fillStyle='#a9b3dc';c.font='20'+F;c.fillText('(simulation) · '+pPsy2,200,654);}
+  c.fillStyle='#7a85b8';c.font='16'+F;c.textAlign='center';c.fillText('En cas d’urgence, contactez les secours.',200,730);nextRdv(c);}
+var napSet=false,bedSet=false;
+function aSom(){pT('Sommeil');pBack();var c=px;c.textAlign='center';c.fillStyle='#f1f3ff';c.font='bold 72'+F;c.fillText('7 h 20',200,260);
+  c.fillStyle='#a9b3dc';c.font='22'+F;c.fillText('Nuit dernière · exemple',200,298);
+  c.fillStyle='#1b2550';rrect(c,50,330,300,20,10);c.fill();c.fillStyle='#b79cff';rrect(c,50,330,234,20,10);c.fill();
+  c.fillStyle='#f1f3ff';c.font='24'+F;c.fillText('Récupération 78 %',200,392);
+  c.fillStyle='#a9b3dc';c.font='22'+F;c.fillText((alertInfo&&alertInfo.kind==='fatigue')?'Sieste de 20 min conseillée':'Un bon sommeil réduit le stress',200,440);
+  pc(34,480,332,56,napSet?'Sieste programmée ✓':'Programmer une sieste',napSet,function(){napSet=!napSet;},22);
+  pc(34,550,332,56,bedSet?'Rappel 22 h 30 activé ✓':'Rappel de coucher',bedSet,function(){bedSet=!bedSet;},22);}
+function aEtir(){pT('Étirements');pBack();var c=px,N=['Cou','Épaules','Dos','Poignets'],e=nowT%60,i=Math.floor(e/15),q=(e%15)/15;
+  c.textAlign='center';c.fillStyle='#a9b3dc';c.font='22'+F;c.fillText('Étape '+(i+1)+' / 4',200,260);
+  c.fillStyle='#f1f3ff';c.font='bold 56'+F;c.fillText(N[i],200,370);
+  c.fillStyle='#1b2550';rrect(c,50,420,300,18,9);c.fill();c.fillStyle='#6ee0ea';rrect(c,50,420,Math.max(18,300*q),18,9);c.fill();
+  c.fillStyle='#a9b3dc';c.font='22'+F;c.fillText((15-Math.floor(e%15))+' s',200,480);c.fillText('Pause active · 1 minute',200,640);}
+function aBien(){pT('Bien-être');pBack();var c=px;
+  var calm=kindOf()==='stress'?Math.round(100-scoreV):72,R=[['Calme',calm,'#6ee0ea'],['Sommeil',78,'#b79cff'],['Activité',64,'#6ee0ea'],['Récupération',71,'#b79cff']];
+  var tot=Math.round(R.reduce(function(a,r){return a+r[1];},0)/R.length);
+  c.textAlign='center';c.fillStyle='#f1f3ff';c.font='bold 84'+F;c.fillText(String(tot),200,260);
+  c.fillStyle='#a9b3dc';c.font='22'+F;c.fillText('score bien-être du jour',200,296);
+  R.forEach(function(r,i){var y=350+i*84;c.textAlign='left';c.fillStyle='#f1f3ff';c.font='bold 22'+F;c.fillText(r[0],40,y);c.textAlign='right';c.fillStyle='#a9b3dc';c.fillText(r[1]+' %',360,y);c.fillStyle='#1b2550';rrect(c,40,y+14,320,16,8);c.fill();c.fillStyle=r[2];rrect(c,40,y+14,Math.max(16,320*r[1]/100),16,8);c.fill();});
+  c.textAlign='center';c.fillStyle='#a9b3dc';c.font='20'+F;c.fillText('Données d’exemple',200,730);}
+// ===== Assistant IA : discussion libre =====
+// Pour brancher un vrai modèle d'IA, renseignez AI_ENDPOINT (POST JSON {messages,lang,context} -> {reply}).
+var AI_ENDPOINT='',aiMsgs=[],aiQ=[],aiBusy=false,aiCtx={name:'',last:'',offer:'',n:0};
+function nz(s){return String(s).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');}
+function pickL(o){var a=o[LANG]||o.fr;aiCtx.n++;return a[aiCtx.n%a.length];}
+var AIX={
+ hi:{fr:['Bonjour ! Je suis l’assistant Calmora. On peut discuter de tout ce que vous voulez : stress, fatigue, sommeil, travail, ou simplement comment se passe votre journée. De quoi avez-vous envie de parler ?'],en:['Hello! I’m the Calmora assistant. We can talk about anything you like: stress, tiredness, sleep, work, or simply how your day is going. What would you like to talk about?'],ar:['مرحبًا! أنا مساعد Calmora. يمكننا الحديث عن أي شيء: التوتر، التعب، النوم، العمل، أو ببساطة كيف يسير يومك. عمّ تودّ أن نتحدث؟']},
+ greet:{fr:['Bonjour{n} ! Content de vous retrouver. Comment vous sentez-vous en ce moment ?','Salut{n} ! Qu’est-ce qui vous occupe l’esprit aujourd’hui ?'],en:['Hello{n}! Good to see you. How are you feeling right now?','Hi{n}! What’s on your mind today?'],ar:['أهلًا{n}! سعيد برؤيتك. كيف تشعر الآن؟','مرحبًا{n}! ما الذي يشغل بالك اليوم؟']},
+ name:{fr:['Enchanté {n} ! Je m’en souviendrai pendant cette discussion. Que puis-je faire pour vous ?'],en:['Nice to meet you, {n}! I’ll remember it during this chat. How can I help?'],ar:['تشرفت بمعرفتك يا {n}! سأتذكر ذلك طوال هذه المحادثة. كيف أساعدك؟']},
+ thanks:{fr:['Avec plaisir ! Je reste là si vous voulez continuer à discuter.','Je vous en prie. Prenez soin de vous.'],en:['You’re welcome! I’m here if you want to keep talking.','My pleasure. Take care of yourself.'],ar:['بكل سرور! أنا هنا إن أردت متابعة الحديث.','عفوًا. اعتنِ بنفسك.']},
+ bye:{fr:['À bientôt ! N’hésitez pas à revenir quand vous voulez.'],en:['See you soon! Come back whenever you like.'],ar:['إلى اللقاء! عُد متى شئت.']},
+ howru:{fr:['Je vais bien, merci de demander ! Et vous, comment ça va vraiment aujourd’hui ?'],en:['I’m doing well, thanks for asking! And how are you really doing today?'],ar:['أنا بخير، شكرًا لسؤالك! وأنت، كيف حالك اليوم حقًا؟']},
+ who:{fr:['Je suis l’assistant IA de Calmora. Je discute avec vous librement et je peux vous proposer des actions : respiration, étirements, sieste, mini-jeux ou un psychologue partenaire. Je ne remplace pas un professionnel de santé.'],en:['I’m the Calmora AI assistant. I chat with you freely and can suggest actions: breathing, stretching, a nap, mini-games or a partner psychologist. I don’t replace a health professional.'],ar:['أنا المساعد الذكي في Calmora. أتحدث معك بحرية ويمكنني اقتراح أنشطة: التنفّس، التمدّد، قيلولة، ألعاب مصغّرة أو أخصائي نفسي شريك. لا أحلّ محل المختص الصحي.']},
+ help:{fr:['On peut parler de tout : ce que vous ressentez, votre journée, le travail, le sommeil… Je peux aussi lancer une respiration, vous proposer une marche, des étirements ou vous aider à trouver un psychologue. Par quoi commencer ?'],en:['We can talk about anything: how you feel, your day, work, sleep… I can also start a breathing session, suggest a walk, stretches, or help you find a psychologist. Where shall we start?'],ar:['يمكننا الحديث عن أي شيء: مشاعرك، يومك، العمل، النوم… ويمكنني أيضًا بدء تمرين تنفّس أو اقتراح مشي أو تمدّد أو مساعدتك في إيجاد أخصائي نفسي. من أين نبدأ؟']},
+ panic:{fr:['Je suis avec vous. Posez les pieds au sol et soufflez lentement : inspirez 4 secondes, expirez 6. Vous êtes en sécurité ici, et cette sensation va passer. Voulez-vous que je vous guide ?'],en:['I’m with you. Put your feet on the floor and breathe slowly: in for 4 seconds, out for 6. You’re safe here, and this feeling will pass. Shall I guide you?'],ar:['أنا معك. ضع قدميك على الأرض وتنفّس ببطء: شهيق 4 ثوانٍ وزفير 6. أنت بأمان هنا وهذا الشعور سيزول. هل أرشدك؟']},
+ stress:{fr:['Je comprends, ça a l’air pesant. Qu’est-ce qui a déclenché ce stress aujourd’hui ? Si vous voulez, on peut aussi faire une minute de respiration ensemble.','Merci de me le dire. Le stress est un signal, pas une faiblesse. Est-ce lié au travail, aux études, ou à autre chose ?'],en:['I understand, that sounds heavy. What triggered this stress today? If you like, we can also do a minute of breathing together.','Thanks for telling me. Stress is a signal, not a weakness. Is it linked to work, studies, or something else?'],ar:['أفهمك، يبدو الأمر ثقيلًا. ما الذي سبّب هذا التوتر اليوم؟ وإن أحببت يمكننا تنفّس دقيقة معًا.','شكرًا لإخباري. التوتر إشارة وليس ضعفًا. هل هو مرتبط بالعمل أو الدراسة أم بشيء آخر؟']},
+ tired:{fr:['La fatigue s’accumule vite. Avez-vous bien dormi ces derniers jours ? Une courte pause ou une sieste de 20 minutes peut aider.','Je vous entends. Est-ce plutôt une fatigue physique, ou une fatigue mentale à force de trop en faire ?'],en:['Tiredness builds up quickly. Have you slept well lately? A short break or a 20-minute nap can help.','I hear you. Is it more physical tiredness, or mental exhaustion from doing too much?'],ar:['التعب يتراكم بسرعة. هل نمت جيدًا مؤخرًا؟ استراحة قصيرة أو قيلولة 20 دقيقة قد تفيد.','أسمعك. هل هو تعب جسدي أم إرهاق ذهني من كثرة الانشغال؟']},
+ sleep:{fr:['Le sommeil influence beaucoup le stress. Essayez des horaires réguliers, moins d’écrans une heure avant de dormir, et une pièce fraîche. À quelle heure vous couchez-vous d’habitude ?'],en:['Sleep strongly affects stress. Try regular hours, fewer screens an hour before bed, and a cool room. What time do you usually go to bed?'],ar:['للنوم تأثير كبير على التوتر. جرّب مواعيد منتظمة، وشاشات أقل قبل النوم بساعة، وغرفة باردة. في أي ساعة تنام عادةً؟']},
+ sad:{fr:['Je suis désolé que vous traversiez ça. Vos émotions sont légitimes. Voulez-vous m’en parler un peu plus ? Parler à un proche ou à un psychologue peut aussi vraiment aider.'],en:['I’m sorry you’re going through this. Your feelings are valid. Would you like to tell me more? Talking to someone close or to a psychologist can really help too.'],ar:['يؤسفني أنك تمرّ بهذا. مشاعرك مشروعة. هل تودّ إخباري بالمزيد؟ والحديث مع شخص قريب أو أخصائي نفسي قد يفيد كثيرًا.']},
+ angry:{fr:['La colère dit souvent qu’une limite a été franchie. Qu’est-ce qui s’est passé ? Quelques respirations lentes peuvent aider à redescendre avant d’en parler.'],en:['Anger often signals that a limit was crossed. What happened? A few slow breaths can help you calm down before talking about it.'],ar:['الغضب غالبًا يعني أن حدًّا ما قد تم تجاوزه. ماذا حدث؟ بضع أنفاس بطيئة قد تساعدك على الهدوء قبل الحديث عنه.']},
+ happy:{fr:['Ça fait plaisir à entendre ! Qu’est-ce qui vous met de bonne humeur ?'],en:['Great to hear! What’s putting you in a good mood?'],ar:['يسعدني سماع ذلك! ما الذي يجعل مزاجك جيدًا؟']},
+ move:{fr:['Bouger régulièrement aide autant le corps que l’esprit. Même 10 minutes de marche réduisent la tension. Voulez-vous que j’envoie une marche à votre montre ?'],en:['Moving regularly helps both body and mind. Even a 10-minute walk reduces tension. Shall I send a walk to your watch?'],ar:['الحركة المنتظمة تفيد الجسد والذهن. حتى مشي 10 دقائق يخفّف التوتر. هل أرسل مشيًا إلى ساعتك؟']},
+ breath:{fr:['Bonne idée. La respiration lente (4 s d’inspiration, 6 s d’expiration) calme le système nerveux en quelques minutes.'],en:['Good idea. Slow breathing (4 s in, 6 s out) calms the nervous system within minutes.'],ar:['فكرة جيدة. التنفّس البطيء (شهيق 4 ثوانٍ وزفير 6) يهدّئ الجهاز العصبي خلال دقائق.']},
+ work:{fr:['Le travail et les études sont une source de pression très courante. Quelle est la partie la plus difficile en ce moment : la charge, une échéance, ou l’ambiance ? Découper en petites étapes aide souvent.'],en:['Work and studies are a very common source of pressure. What’s hardest right now: the workload, a deadline, or the atmosphere? Breaking things into small steps often helps.'],ar:['العمل والدراسة مصدر ضغط شائع جدًا. ما الأصعب الآن: كثرة المهام أم موعد نهائي أم الأجواء؟ تقسيم المهام إلى خطوات صغيرة يساعد غالبًا.']},
+ watch:{fr:['La montre mesure la fréquence cardiaque et la VFC, ignore les mesures pendant un mouvement, et alerte si le score dépasse {t} pendant {h} s. Les paramètres sont réglables dans l’onglet Détection.'],en:['The watch measures heart rate and HRV, ignores measurements during movement, and alerts if the score exceeds {t} for {h} s. Settings can be changed in the Detection tab.'],ar:['تقيس الساعة النبض وتقلّبه، وتتجاهل القياسات أثناء الحركة، وتنبّه إذا تجاوز المؤشر {t} لمدة {h} ث. يمكن تعديل الإعدادات في تبويب الكشف.']},
+ privacy:{fr:['Le score est calculé sur la montre : les signaux bruts ne quittent pas le poignet. L’échange avec le psychologue reste confidentiel et à votre initiative.'],en:['The score is computed on the watch: raw signals never leave the wrist. Exchanges with the psychologist stay confidential and on your initiative.'],ar:['يُحسب المؤشر على الساعة: لا تغادر الإشارات الخام المعصم. والتواصل مع الأخصائي النفسي يبقى سرّيًا وبمبادرتك.']},
+ psy:{fr:['Parler à un professionnel est un très bon réflexe. Je peux vous montrer les psychologues partenaires et vous aider à prendre rendez-vous.'],en:['Talking to a professional is a great instinct. I can show you the partner psychologists and help you book an appointment.'],ar:['التحدث مع مختص خطوة رائعة. يمكنني عرض الأخصائيين الشركاء ومساعدتك في حجز موعد.']},
+ game:{fr:['Se changer les idées peut faire du bien. Bulles, rythme, séquence ou paires : lequel vous tente ?'],en:['Taking your mind off things can help. Bubbles, rhythm, sequence or pairs: which one appeals to you?'],ar:['تغيير الأجواء قد يفيد. فقاعات، إيقاع، تسلسل أو أزواج: أيّها يناسبك؟']},
+ joke:{fr:['Pourquoi les montres connectées sont-elles de bonnes confidentes ? Parce qu’elles gardent toujours le rythme de vos émotions. 😄'],en:['Why are smartwatches good confidants? Because they always keep up with the rhythm of your emotions. 😄'],ar:['لماذا الساعات الذكية صديقة جيدة؟ لأنها تواكب دائمًا إيقاع مشاعرك. 😄']},
+ crisis:{fr:['Je suis vraiment touché que vous me confiiez cela, et votre sécurité compte avant tout. Vous n’êtes pas seul(e). Contactez maintenant une personne de confiance ou les services d’urgence (190 en Tunisie). Je reste ici avec vous, et je peux aussi vous mettre en lien avec un psychologue.'],en:['I’m glad you told me, and your safety comes first. You are not alone. Please contact someone you trust or emergency services now (190 in Tunisia). I’m staying here with you, and I can connect you to a psychologist too.'],ar:['أقدّر أنك أخبرتني بذلك، وسلامتك أهم شيء. لست وحدك. تواصل الآن مع شخص تثق به أو مع خدمات الطوارئ (190 في تونس). أنا هنا معك ويمكنني أيضًا ربطك بأخصائي نفسي.']},
+ fallq:{fr:['Bonne question. Ici je suis un assistant de démonstration qui fonctionne en local : je suis surtout à l’aise sur le stress, le sommeil, l’activité et le bien-être. Pour des réponses ouvertes sur tous les sujets, l’application se connectera à un modèle d’IA. Et vous, comment vous sentez-vous ?'],en:['Good question. Here I’m a demo assistant running locally: I’m mostly comfortable with stress, sleep, activity and wellbeing. For open answers on any topic, the app will connect to an AI model. And how are you feeling?'],ar:['سؤال جيد. أنا هنا مساعد تجريبي يعمل محليًا: أتقن أكثر مواضيع التوتر والنوم والنشاط والصحة العامة. وللإجابات المفتوحة في كل المواضيع سيتصل التطبيق بنموذج ذكاء اصطناعي. وأنت، كيف تشعر؟']},
+ fall:{fr:['Je vous écoute. Pouvez-vous m’en dire un peu plus ?','Je vois. Et qu’est-ce que cela change pour vous en ce moment ?','Merci de partager ça. Qu’aimeriez-vous qu’il se passe ensuite ?','Intéressant. Qu’est-ce qui vous a amené à y penser aujourd’hui ?'],en:['I’m listening. Can you tell me a bit more?','I see. And what does that change for you right now?','Thanks for sharing that. What would you like to happen next?','Interesting. What brought you to think about it today?'],ar:['أنا أستمع إليك. هل يمكنك إخباري بالمزيد؟','أفهم. وماذا يغيّر ذلك بالنسبة لك الآن؟','شكرًا لمشاركتي ذلك. ماذا تتمنى أن يحدث بعد ذلك؟','مثير للاهتمام. ما الذي جعلك تفكّر في ذلك اليوم؟']},
+ yesNoAct:{fr:['Très bien, c’est parti.'],en:['Alright, let’s go.'],ar:['حسنًا، هيا بنا.']},
+ no:{fr:['D’accord, pas de souci. De quoi voulez-vous parler alors ?'],en:['Okay, no problem. What would you like to talk about then?'],ar:['حسنًا، لا مشكلة. عمّ تودّ الحديث إذن؟']}
+};
+var AIR=[
+ ['crisis',/suicid|me tuer|en finir avec|mourir|envie de mourir|me faire du mal|kill myself|want to die|self.?harm|end my life|اموت|أموت|انتحار|أنتحر/,'psy'],
+ ['panic',/panique|panic|crise d.?angoisse|etouff|palpitation|هلع|اختناق/,'resp'],
+ ['joke',/blague|joke|drole|نكتة/,''],
+ ['who',/qui es.?tu|tu es qui|t.es qui|who are you|what are you|ton nom|your name|من انت|من أنت/,''],
+ ['help',/\baide\b|aide.?moi|help|que peux.?tu|what can you|sais.?tu faire|ساعد|ماذا تستطيع/,'resp'],
+ ['privacy',/donnee|confidential|vie privee|\bprive|privacy|\bdata\b|بيانات|خصوصية/,''],
+ ['watch',/montre|capteur|detect|\bscore|alerte|fiable|precis|watch|sensor|alert|accura|ساعة|مستشعر|تنبيه|دقة/,''],
+ ['psy',/psycho|therap|consult|rendez|docteur|\bpsy\b|appointment|أخصائي|معالج|موعد/,'psy'],
+ ['sleep',/dormir|sommeil|insomn|sleep|\bnap\b|sieste|نوم|ارق|أرق|قيلولة/,'nap'],
+ ['stress',/stress|anxi|inquiet|nerveu|tendu|angoiss|worr|nervous|tense|overwhelm|debord|pression|توتر|قلق|ضغط|متوتر/,'resp'],
+ ['tired',/fatigu|epuis|creve|tired|exhaust|burn.?out|energie|عياء|تعب|متعب|مرهق/,'nap'],
+ ['sad',/triste|deprim|cafard|\bseul|pleur|\bsad\b|lonely|depress|\bcry|حزين|حزن|وحيد|اكتئاب/,'psy'],
+ ['angry',/colere|enerv|furieu|agace|angry|furious|annoy|غضب|غاضب|عصبي/,'resp'],
+ ['move',/bouger|sport|marche|sedentaire|\bassis|\bmove|\bwalk|exercise|حركة|مشي|رياضة/,'walk'],
+ ['breath',/respir|souffle|breath|تنفس|نفس/,'resp'],
+ ['game',/\bjeu|jouer|\bgame|\bplay|distrac|ennui|bored|لعبة|ألعاب|ملل/,'game'],
+ ['work',/travail|boulot|examen|etude|\bexam|cours\b|projet|stage|\bwork|study|deadline|\bjob|school|عمل|امتحان|دراسة|مشروع/,''],
+ ['happy',/content|heureu|joie|super|genial|happy|great|\bgood\b|\bbien\b|ca va\b|i.?m fine|فرحان|سعيد|مبسوط|بخير/,'']
+];
+function aiReply(raw){
+  var s=nz(raw).trim(),m,k;
+  m=s.match(/(?:je m.?appelle|moi c.?est|my name is|i am called)\s+([a-z\u0600-\u06ff-]+)/)||s.match(/اسمي\s+(\S+)/);
+  if(m){aiCtx.name=m[1].charAt(0).toUpperCase()+m[1].slice(1);aiCtx.last='name';return{t:pickL(AIX.name).replace('{n}',aiCtx.name)};}
+  for(k=0;k<AIR.length;k++){if(k===0||true){if(AIR[k][1].test(s)){aiCtx.last=AIR[k][0];aiCtx.offer=AIR[k][2];var a=AIX[AIR[k][0]],t=pickL(a).replace('{t}',THR).replace('{h}',HOLD.toFixed(1).replace('.',LANG==='fr'?',':'.'));return{t:t,act:AIR[k][2]||undefined};}}}
+  if(/^(oui|ouais|ok|d.?accord|yes|yeah|sure|please|volontiers|vas.?y|نعم|اه|أه|طيب|حسنا)/.test(s)){var o=aiCtx.offer;if(o){aiCtx.offer='';return{t:pickL(AIX.yesNoAct),act:o,auto:1};}return{t:pickL(AIX.fall)};}
+  if(/^(non|nope|no\b|pas vraiment|لا\b)/.test(s)){aiCtx.offer='';return{t:pickL(AIX.no)};}
+  if(/^(salut|bonjour|bonsoir|coucou|hello|\bhi\b|hey|salam|slm|مرحبا|السلام|اهلا|أهلا)/.test(s)){aiCtx.last='greet';return{t:pickL(AIX.greet).replace('{n}',aiCtx.name?' '+aiCtx.name:'')};}
+  if(/merci|thank|شكرا|شكراً/.test(s)){aiCtx.last='thanks';return{t:pickL(AIX.thanks)};}
+  if(/au revoir|a bientot|\bbye|goodbye|bonne nuit|good night|مع السلامة|تصبح/.test(s)){aiCtx.last='bye';return{t:pickL(AIX.bye)};}
+  if(/comment (vas|allez)|how are you|ca va.*(toi|vous)|كيف حالك/.test(s)){aiCtx.last='howru';return{t:pickL(AIX.howru)};}
+  if(/\?|؟/.test(raw)){aiCtx.last='fallq';return{t:pickL(AIX.fallq)};}
+  aiCtx.last='fall';return{t:pickL(AIX.fall)};
+}
+function aiActLbl(a){return{resp:'Lancer la respiration',walk:'Marche 10 min → montre',stretch:'Étirements → montre',nap:'Programmer une sieste',psy:'Trouver un psychologue',game:'Mini-jeux',relax:'Relaxation'}[a];}
+function aiDo(a){
+  if(a==='resp'){pst='resp';ses=null;}
+  else if(a==='walk'){suggest='Marche 10 min';aiMsgs.push({me:0,t:'Envoyé à la montre ✓',h:hm()});}
+  else if(a==='stretch'){suggest='Étirements 1 min';aiMsgs.push({me:0,t:'Envoyé à la montre ✓',h:hm()});}
+  else if(a==='nap'){pst='som';}
+  else if(a==='psy'){pst='psy';pv='list';}
+  else if(a==='game'){pst='jeux';ses=null;pgm='';}
+  else if(a==='relax'){pst='relax';ses=null;}
+}
+function aiSend(txt){
+  txt=String(txt).trim().slice(0,400);if(!txt)return;
+  aiMsgs.push({me:1,t:txt,h:hm()});if(aiMsgs.length>60)aiMsgs=aiMsgs.slice(-60);
+  var r=aiReply(txt);
+  if(r.auto){aiQ.push({at:nowT+.8,m:{t:r.t}});aiDo(r.act);return;}
+  if(AI_ENDPOINT&&window.fetch){
+    aiBusy=true;
+    fetch(AI_ENDPOINT,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({messages:aiMsgs.map(function(x){return{role:x.me?'user':'assistant',content:x.t};}),lang:LANG,context:{score:Math.round(scoreV),kind:kindOf()}})})
+    .then(function(x){return x.json();}).then(function(j){aiBusy=false;aiMsgs.push({me:0,t:String(j.reply||j.text||r.t),h:hm(),act:r.act});})
+    .catch(function(){aiBusy=false;aiMsgs.push({me:0,t:r.t,h:hm(),act:r.act});});
+    return;}
+  aiQ.push({at:nowT+.9+Math.min(2.2,r.t.length/70),m:r});
+}
+function aIA(){var c=px;
+  if(!aiMsgs.length)aiMsgs.push({me:0,t:pickL(AIX.hi),h:hm()});
+  pT('Assistant IA');pBack();
+  aiQ=aiQ.filter(function(r){if(nowT>=r.at){aiMsgs.push({me:0,t:r.m.t,h:hm(),act:r.m.act});return false;}return true;});
+  c.textAlign='center';c.fillStyle='#7a85b8';c.font='14'+F;c.fillText('Discussion libre · réponses simulées',200,160);
+  var typ=aiQ.length>0||aiBusy,last=aiMsgs[aiMsgs.length-1],hasAct=!typ&&last&&!last.me&&last.act;
+  var maxH=410-(typ?46:0)-(hasAct?54:0),lay=[],tot=0,k;
+  c.font='17'+F;
+  for(k=aiMsgs.length-1;k>=0;k--){var ln=wrapL(c,aiMsgs[k].t,236),h=ln.length*22+38;if(tot+h+8>maxH&&lay.length)break;lay.unshift({m:aiMsgs[k],ln:ln,h:h});tot+=h+8;}
+  var y=182;
+  lay.forEach(function(b){var me=b.m.me,x=me?366-264:34;c.fillStyle=me?'#5b42c4':'#1b2550';rrect(c,x,y,264,b.h,20);c.fill();c.textAlign='left';c.fillStyle='#fff';c.font='17'+F;b.ln.forEach(function(l,i){c.fillText(l,x+14,y+28+i*22);});c.fillStyle=me?'#d9d2ff':'#7a85b8';c.font='13'+F;c.textAlign='right';c.fillText(b.m.h,x+250,y+b.h-10);y+=b.h+8;});
+  if(typ){c.fillStyle='#1b2550';rrect(c,34,y,120,38,19);c.fill();c.fillStyle='#a9b3dc';c.font='16'+F;c.textAlign='left';c.fillText('Écrit…',52,y+25);}
+  if(hasAct){var ac=last.act;pc(34,y,332,44,aiActLbl(ac),true,function(){last.act=undefined;aiDo(ac);},19);}
+  pc(34,604,332,44,'✎ Écrire un message…',true,function(){askText('Écrire un message','',400,function(v){if(v)aiSend(v);});},19);
+  [['Stressé','Stressé'],['Fatigué','Fatigué'],['Ça va','Ça va']].forEach(function(q,i){pc(34+i*116,656,104,38,q[0],false,function(){aiSend(tr(q[1]));},16);});
+  pc(100,704,200,34,'Nouvelle discussion',false,function(){aiMsgs=[];aiQ=[];aiBusy=false;aiCtx={name:'',last:'',offer:'',n:0};},15);}
+function aAct(){pT('Activités');pBack();var c=px;c.fillStyle='#a9b3dc';c.font='22'+F;c.textAlign='center';c.fillText('Envoyer à la montre',200,176);
+  ACTS.forEach(function(a,i){var y=200+i*92,full=a[0]+' '+a[1],on=suggest===full;c.fillStyle='#1b2550';rrect(c,34,y,332,76,28);c.fill();c.textAlign='left';c.fillStyle='#f1f3ff';c.font='bold 26'+F;c.fillText(a[0],58,y+34);c.fillStyle='#a9b3dc';c.font='20'+F;c.fillText(a[1],58,y+62);pc(246,y+16,104,44,on?'Envoyé':'Envoyer',on,function(){suggest=full;},20);});
+  if(suggest){c.fillStyle='#6ee0ea';c.font='22'+F;c.textAlign='center';c.fillText('Sur la montre : '+suggest,200,620);}}
+function aSuivi(){pT('Suivi');pBack();var c=px;
+  pc(34,160,160,44,'Séance',!pSv,function(){pSv=0;},20);pc(206,160,160,44,'Efficacité',!!pSv,function(){pSv=1;},20);if(pSv){aFx();return;}
+  if(hist.length<2||rec!==1){c.fillStyle='#a9b3dc';c.font='24'+F;c.textAlign='center';c.fillText('Aucune séance enregistrée',200,300);c.fillText('Lancez la simulation.',200,340);return;}
+  c.strokeStyle='#6ee0ea';c.lineWidth=6;c.lineJoin='round';c.beginPath();
+  for(var i=0;i<=20;i++){var h=hist[Math.floor(i/20*(hist.length-1))],X=50+i*15,Y=560-h[1]*3.2;if(i===0)c.moveTo(X,Y);else c.lineTo(X,Y);}c.stroke();
+  c.fillStyle='#a9b3dc';c.font='24'+F;c.textAlign='center';c.fillText('Score de stress au fil de la séance',200,620);c.fillText('Pic : '+Math.round(peak)+' / 100',200,660);}
+function pdrawAuto(s){
+  var c=px;c.clearRect(0,0,400,840);c.fillStyle='#050816';rrect(c,0,0,400,840,62);c.fill();
+  var g=c.createLinearGradient(0,0,0,840);g.addColorStop(0,'#26358a');g.addColorStop(1,'#0f1a3a');c.fillStyle=g;rrect(c,12,12,376,816,52);c.fill();
+  c.textAlign='center';c.fillStyle='#f1f3ff';
+  if(phase<3){c.font='bold 92'+F;c.fillText(hhmm(),200,230);c.fillStyle='#a9b3dc';c.font='28'+F;c.fillText('Aucune alerte',200,290);}
+  else if(phase===3){c.font='bold 60'+F;c.fillText(hhmm(),200,150);
+    c.fillStyle='#f1f3ff';rrect(c,34,230,332,200,30);c.fill();c.textAlign='left';
+    c.fillStyle='#5b42c4';c.font='bold 24'+F;c.fillText('Calmora',62,274);
+    c.fillStyle='#14204a';c.font='bold 30'+F;c.fillText(kA().title,62,320);
+    c.fillStyle='#5a6590';c.font='24'+F;c.fillText(kA().line(),62,358);
+    c.fillStyle='#5b42c4';rrect(c,62,380,250,38,19);c.fill();c.fillStyle='#fff';c.font='bold 20'+F;c.fillText('Ouverture de Calmora…',82,406);}
+  else if(phase===4){
+    var ok=cl((s-tAl-4)/.5);c.save();c.globalAlpha=ok;c.translate(0,(1-ok)*50);
+    c.fillStyle='#b79cff';c.font='bold 36'+F;c.fillText('Calmora',200,84);
+    c.fillStyle='#f1f3ff';c.font='bold 26'+F;c.fillText(kA().msg,200,130);
+    c.fillStyle='#a9b3dc';c.font='21'+F;c.fillText('Que voulez-vous faire ?',200,162);
+    var OP=kA().opts;
+    OP.forEach(function(o,i){var y=186+i*100;
+      c.fillStyle=i===0?'#3a2f8f':'#1b2550';rrect(c,34,y,332,86,26);c.fill();
+      if(i===0){c.strokeStyle='#b79cff';c.lineWidth=3;rrect(c,34,y,332,86,26);c.stroke();}
+      c.textAlign='left';c.fillStyle='#f1f3ff';c.font='bold 26'+F;c.fillText(o[1],62,y+38);
+      c.fillStyle='#a9b3dc';c.font='20'+F;c.fillText(o[2],62,y+68);
+      if(i===0){c.fillStyle='#b79cff';rrect(c,244,y+14,108,28,14);c.fill();c.fillStyle='#0f1a3a';c.font='bold 16'+F;c.textAlign='center';c.fillText('Recommandé',298,y+34);}
+      c.textAlign='center';});
+    pc(34,690,332,56,'Enregistrer la séance',true,function(){choose(1);},22);
+    pc(34,756,332,44,'Ne pas enregistrer',false,function(){choose(-1);},19);
+    c.restore();}
+  else{c.font='bold 32'+F;c.fillText(rec===1?'Séance enregistrée':'Séance non enregistrée',200,130);
+    var v=[0,1,2,3,4,5].map(function(i){var h=hist[Math.floor(i/5*(hist.length-1))];return h?1-h[1]/100:.8;});c.strokeStyle='#6ee0ea';c.lineWidth=6;c.lineJoin='round';c.beginPath();
+    v.forEach(function(y,i){var X=50+i*60,Y=520-y*300;if(i===0)c.moveTo(X,Y);else c.lineTo(X,Y);});c.stroke();
+    c.fillStyle='#a9b3dc';c.font='26'+F;c.fillText('Pic de stress : '+Math.round(peak)+' / 100',200,600);c.fillText('Retour à '+Math.round(scoreV)+' / 100',200,640);if(rec===1){c.fillText('Historique mis à jour',200,690);c.fillStyle='#b79cff';c.font='bold 26'+F;c.fillText('+'+rwLast+' pts Calme',200,740);}}
+  ptex.needsUpdate=true;
+}
+function pdraw(s){
+  phits=[];
+  if(!simOn&&pst==='auto')pst='home';
+  if(simOn&&pst==='auto'){pdrawAuto(s);
+    if(phase<3||phase>=5)ph2(0,0,400,840,function(){pst='home';});
+    if(phase===4){kA().opts.forEach(function(o,i){ph2(34,186+i*100,332,86,function(){pst=o[0];});});}
+    return;}
+  var c=px;c.clearRect(0,0,400,840);c.fillStyle='#050816';rrect(c,0,0,400,840,62);c.fill();
+  var g=c.createLinearGradient(0,0,0,840);g.addColorStop(0,'#26358a');g.addColorStop(1,'#0f1a3a');c.fillStyle=g;rrect(c,12,12,376,816,52);c.fill();
+  ({home:aHome,rew:aRew,resp:aResp,relax:aRelax,som:aSom,etir:aEtir,bien:aBien,jeux:aGame,ia:aIA,psy:aPsy,act:aAct,suivi:aSuivi})[pst](s);
+  ptex.needsUpdate=true;
+}
+function haloUpdate(t){var inh=false,k=0,op=.35,col=0x6ee0ea;
+  if(scr==='resp'){var cyc=breath[0]+breath[1],q=nowT%cyc;inh=q<breath[0];k=inh?q/breath[0]:1-(q-breath[0])/breath[1];op=.25+.75*k;}
+  else if(mode==='stress'){col=0xb79cff;op=.5+.5*Math.abs(Math.sin(t*5));}
+  halo.material.color.setHex(col);halo.material.opacity=op;
+  if(disc&&scr==='resp'&&vibOn&&!reduce&&inh)watch.position.x+=Math.sin(t*80)*.02*k;}
+function simUpdate(t){
+  var tg=(simOn||appOn)?1:0;simK+=(tg-simK)*.06;if(Math.abs(tg-simK)<.003)simK=tg;
+  var K=simK,wx=-1.9*K;
+  watch.position.x=wx;watch.scale.setScalar(1-.2*K);
+  cam.position.z=baseZ*(1+.7*K);cam.position.y=-.16*cam.position.z*K;
+  phone.visible=K>.01;phone.position.set(2.1*K,0,0);phone.scale.setScalar(Math.max(.01,.9*K));phone.rotation.y=-.35;
+  if(simOn&&tAl>=0&&rec===0&&t-sT0>=tAl+4.6)sT0=t-(tAl+4.6);
+  var s=simOn?t-sT0:0;if(simOn)simStep(s);
+  if(simOn&&!reduce&&vibOn&&tAl>=0&&s>=tAl&&s<tAl+1.5)watch.position.x+=Math.sin(t*70)*.03;
+  var ra=simOn&&tAl>=0&&s>=tAl&&s<tAl+4;
+  rings.forEach(function(rg,i){rg.visible=ra;if(!ra)return;var r=((t*.9)+i/3)%1;rg.position.set(wx,0,.3);rg.scale.setScalar(.3+r*1.8);rg.material.opacity=(1-r)*.55;});
+  var pa=simOn&&tAl>=0&&s>=tAl+1.5&&s<tAl+4;
+  pk.forEach(function(m,j){m.visible=pa;if(!pa)return;var u=(((s-tAl-1.5)*.8)+j*.2)%1;m.position.set(wx+(2.1-wx)*u,Math.sin(Math.PI*u)*.9,.2);});
+  if(K>.01)pdraw(s);
+}
+
+// ===== Interactions =====
+var ray=new THREE.Raycaster(),mp=new THREE.Vector2();
+function crownPress(){if(scr==='wk'){wkOn=false;scr='act';return;}scr=scr==='menu'?'home':'menu';}
+function hitTest(list,u,v){for(var i=list.length-1;i>=0;i--){var q=list[i];if(u>=q.x&&u<=q.x+q.w&&v>=q.y&&v<=q.y+q.h)return q.f;}return null;}
+function pick(e){var r=renderer.domElement.getBoundingClientRect();mp.set((e.clientX-r.left)/r.width*2-1,-((e.clientY-r.top)/r.height)*2+1);ray.setFromCamera(mp,cam);
+  var ob=[screen,crown];if(phone.visible)ob.push(pscr);var h=ray.intersectObjects(ob,false)[0];if(!h)return null;
+  if(h.object===crown)return crownPress;
+  if(h.object===pscr)return hitTest(phits,h.uv.x*400,(1-h.uv.y)*840);
+  return hitTest(hits,h.uv.x*512,(1-h.uv.y)*616);}
+root.addEventListener('pointerdown',function(e){pd={x:e.clientX,y:e.clientY};drag=true;lx=e.clientX;ly=e.clientY;try{root.setPointerCapture(e.pointerId);}catch(x){}});
+root.addEventListener('pointermove',function(e){
+  if(!drag){root.style.cursor=pick(e)?'pointer':'';return;}
+  ty+=(e.clientX-lx)*.01;tx=Math.max(-.7,Math.min(.7,tx+(e.clientY-ly)*.01));lx=e.clientX;ly=e.clientY;});
+root.addEventListener('pointerup',function(e){drag=false;if(!pd)return;var mv=Math.hypot(e.clientX-pd.x,e.clientY-pd.y);pd=null;if(mv<6){var f=pick(e);if(f)f();}});
+root.addEventListener('pointercancel',function(){drag=false;pd=null;});
+root.addEventListener('keydown',function(e){if(e.key==='ArrowLeft'){ty-=.2;e.preventDefault();}else if(e.key==='ArrowRight'){ty+=.2;e.preventDefault();}else if(e.key==='ArrowUp'){tx=Math.max(-.7,tx-.1);e.preventDefault();}else if(e.key==='ArrowDown'){tx=Math.min(.7,tx+.1);e.preventDefault();}});
+window.addEventListener('keydown',function(e){if(e.key==='Escape')scr=scr==='menu'?'home':'menu';});
+var zc=$('zc'),zx2=zc.getContext('2d');
+zc.addEventListener('click',function(e){var r=zc.getBoundingClientRect(),f=hitTest(hits,(e.clientX-r.left)/r.width*512,(e.clientY-r.top)/r.height*616);if(f)f();});
+var gi=$('gi'),giBtns=[],lastScr='';
+[{k:'home',n:'Accueil'},{k:'menu',n:'Menu'}].concat(MENU).forEach(function(m){var b=document.createElement('button');b.type='button';b.textContent=m.n;b.addEventListener('click',function(){if(simOn)stopSim();scr=m.k;ty=Math.round(ty/TAU)*TAU;tx=0;exT=0;viewSeg.set(0);});gi.appendChild(b);giBtns.push([m.k,b]);});
+function syncGi(){giBtns.forEach(function(p){p[1].setAttribute('aria-pressed',p[0]===scr?'true':'false');});}
+var tabs=[].slice.call(document.querySelectorAll('[role=tab]'));
+tabs.forEach(function(t){t.addEventListener('click',function(){tabs.forEach(function(x){var on=x===t;x.setAttribute('aria-selected',on?'true':'false');x.tabIndex=on?0:-1;$(x.getAttribute('aria-controls')).hidden=!on;});if(t.id==='tabD')drawChart(simState==='run'?lastS:T);});
+  t.addEventListener('keydown',function(e){var i=tabs.indexOf(t),n=e.key==='ArrowRight'?i+1:e.key==='ArrowLeft'?i-1:-1;if(n<0)return;var tt=tabs[(n+tabs.length)%tabs.length];tt.focus();tt.click();e.preventDefault();});});
+expBtn.addEventListener('click',function(){
+  if(!hist.length)return;
+  var rows=['temps_s;score_stress;fc_bpm;vfc_ms;mouvement_g;mesure_valide;score_classique'];
+  hist.forEach(function(p){rows.push([p[0].toFixed(1),p[1].toFixed(1),p[2].toFixed(0),p[4].toFixed(0),p[5].toFixed(2),p[3]?1:0,p[6]==null?'':p[6].toFixed(1)].join(';'));});
+  var b=new Blob(['\ufeff'+rows.join('\n')],{type:'text/csv;charset=utf-8'}),a=document.createElement('a');
+  a.href=URL.createObjectURL(b);a.download='calmora-seance-'+scen+'.csv';document.body.appendChild(a);a.click();a.remove();setTimeout(function(){URL.revokeObjectURL(a.href);},2000);});
+
+function resize(){
+  var w=root.clientWidth,h=root.clientHeight;if(!w||!h)return;
+  renderer.setSize(w,h);cam.aspect=w/h;baseZ=10/Math.min(1,cam.aspect*1.6);cam.position.set(0,0,baseZ);cam.updateProjectionMatrix();
+  co.setAttribute('viewBox','0 0 '+w+' '+h);
+  drawChart(simState==='run'?lastS:T);
+}
+if(window.ResizeObserver)new ResizeObserver(resize).observe(root);window.addEventListener('resize',resize);resize();
+function refreshLang(){
+  applyLang();applyKind();
+  $('scd').textContent=tr(SC[scen].d);
+  setStat(statFr);setSimBtn(simBtnFr);setPill(pillFr,pillK);
+  Object.keys(kvFr).forEach(function(k){setKv(k,kvFr[k]);});
+  say(capFr);whyKey='';renderWhy();renderCmp(true);updProfile();renderAdapt();
+  $('oDays').textContent=tr(days+' j');
+  drawChart(simState==='run'?lastS:T);
+}
+[].slice.call(document.querySelectorAll('[data-l]')).forEach(function(b){b.addEventListener('click',function(){LANG=b.getAttribute('data-l');try{localStorage.setItem('calmora-lang',LANG);}catch(e){}$('lmenu').hidden=true;$('bLang').setAttribute('aria-expanded','false');refreshLang();});});
+$('bLang').addEventListener('click',function(e){e.stopPropagation();var m=$('lmenu');m.hidden=!m.hidden;this.setAttribute('aria-expanded',m.hidden?'false':'true');});
+document.addEventListener('click',function(){var m=$('lmenu');if(!m.hidden){m.hidden=true;$('bLang').setAttribute('aria-expanded','false');}});
+renderWhy();updProfile();renderAdapt();
+refreshLang();
+var autoStart=true; // l'exemple démarre seul : scénario « Stress aigu » avec détection et alerte
+
+var fs=document.createElement('div');fs.id='appfs';fs.hidden=true;
+fs.innerHTML='<div class="fsh"><strong>Calmora · Application</strong><button type="button" id="fsx">✕ Fermer</button></div><div class="fsb"><nav id="fsn" class="fsn" aria-label="Fonctionnalités"></nav><canvas id="fsc" width="800" height="1680" aria-label="Application Calmora, cliquable"></canvas></div>';
+document.body.appendChild(fs);
+var fsc=$('fsc'),fsx2=fsc.getContext('2d'),fsOn=false,fsPrev=false,fsBt=[];
+[{k:'home',n:'Accueil'}].concat(PM).forEach(function(m){var b=document.createElement('button');b.type='button';b.addEventListener('click',function(){ses=null;pgm='';pv='';pSv=0;pst=m.k;});$('fsn').appendChild(b);fsBt.push([m,b]);});
+function fsSync(){if(!fsOn)return;fsBt.forEach(function(p){var t=(p[0].g?p[0].g+'  ':'')+tr(p[0].n);if(p[1].textContent!==t)p[1].textContent=t;p[1].setAttribute('aria-pressed',pst===p[0].k?'true':'false');});}
+function fsClose(){fsOn=false;fs.hidden=true;appOn=fsPrev;$('bApp').setAttribute('aria-pressed',appOn?'true':'false');}
+$('bFull').addEventListener('click',function(){fsPrev=appOn;if(!appOn){appOn=true;pst='home';}$('bApp').setAttribute('aria-pressed','true');fsOn=true;fs.hidden=false;$('fsx').focus();});
+$('fsx').addEventListener('click',fsClose);
+window.addEventListener('keydown',function(e){if(e.key==='Escape'&&fsOn){fsClose();e.stopImmediatePropagation();}},true);
+function fsHit(e){var r=fsc.getBoundingClientRect();return hitTest(phits,(e.clientX-r.left)/r.width*400,(e.clientY-r.top)/r.height*840);}
+fsc.addEventListener('click',function(e){var f=fsHit(e);if(f)f();});
+fsc.addEventListener('pointermove',function(e){fsc.style.cursor=fsHit(e)?'pointer':'default';});
+var bFs=$('bFs');
+function fsRefresh(){var on=!!(document.fullscreenElement||document.webkitFullscreenElement);bFs.textContent=on?'⤡':'⤢';bFs.setAttribute('aria-label',tr(on?'Quitter le plein écran':'Plein écran'));bFs.title=bFs.getAttribute('aria-label');}
+if(!document.fullscreenEnabled&&!document.webkitFullscreenEnabled)bFs.style.display='none';
+bFs.addEventListener('click',function(){try{var d=document,e=d.documentElement,p;if(d.fullscreenElement||d.webkitFullscreenElement)p=(d.exitFullscreen||d.webkitExitFullscreen).call(d);else p=(e.requestFullscreen||e.webkitRequestFullscreen).call(e);if(p&&p.catch)p.catch(function(){});}catch(x){}});
+document.addEventListener('fullscreenchange',fsRefresh);document.addEventListener('webkitfullscreenchange',fsRefresh);fsRefresh();
+function loop(ms){
+  var t=ms/1000;nowT=t;
+  if(autoStart){autoStart=false;startSim();}
+  bpmV+=(tB-bpmV)*.05;valV+=(tV-valV)*.05;
+  by+=(ty-by)*.12;bx+=(tx-bx)*.12;ex+=(exT-ex)*.08;
+  layers.forEach(function(l){l.m.position.z=l.z0+l.dz*ex;});
+  simUpdate(t);haloUpdate(t);
+  if(scr!==lastScr){lastScr=scr;syncGi();}
+  l1.intensity=1.3+(mode==='stress'&&!reduce?Math.sin(t*5)*.8:0);
+  watch.rotation.y=by+(reduce||drag?0:Math.sin(t*.6)*.18);
+  watch.rotation.x=bx;
+  draw(reduce?0:t);
+  zx2.drawImage(cv,0,0);if(fsOn){fsx2.drawImage(pcv,0,0);fsSync();}
+  renderer.render(scene,cam);
+  callouts();
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>
